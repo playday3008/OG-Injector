@@ -329,10 +329,8 @@ int wmain()
 	JUNK;
 	if (inst.at(2))
 		dllname += xorstr_(L"_AVX2.dll");
-	JUNK;
 	else if (inst.at(1))
 		dllname += xorstr_(L"_AVX.dll");
-	JUNK;
 	else if (inst.at(0))
 		dllname += xorstr_(L"_SSE2.dll");
 	JUNK;
