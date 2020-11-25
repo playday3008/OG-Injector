@@ -190,7 +190,7 @@ int wmain()
 	#endif
 
 	#if (defined(OSIRIS) || defined(GOESP)) && defined(BETA)
-	dllname += xorstr_(L"_BETA"));
+	dllname += xorstr_(L"_BETA");
 	#endif
 
 	#if (defined(OSIRIS) || defined(GOESP))
