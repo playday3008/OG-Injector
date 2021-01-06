@@ -17,6 +17,7 @@ using namespace std;
 //#define GOESP
 //#define BETA
 
+#if (defined(OSIRIS) || defined(GOESP))
 __forceinline void checkinst(array<bool, 3>& inst)
 {
 	JUNK;
@@ -48,6 +49,7 @@ __forceinline void checkinst(array<bool, 3>& inst)
 	JUNK;
 	return;
 };
+#endif
 
 __forceinline bool bypass(DWORD dwProcess)
 {
@@ -297,11 +299,13 @@ int wmain()
 
 #pragma endregion
 
+	#if (defined(OSIRIS) || defined(GOESP))
 	// Get processor instructions
 	JUNK;
 	array<bool, 3> inst{};
 	JUNK;
 	checkinst(inst);
+	#endif
 
 #pragma region Osiris and GOESP part
 
@@ -315,7 +319,7 @@ int wmain()
 	JUNK;
 #else
 	JUNK;
-	wstring dllname = xorstr_(L"cheat.dll");
+	wstring dllname = xorstr_(L"library.dll");
 	JUNK;
 #endif
 
