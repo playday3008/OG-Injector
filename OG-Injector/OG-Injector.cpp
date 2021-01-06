@@ -9,6 +9,7 @@ using namespace std;
 //#define GOESP
 //#define BETA
 
+#if (defined(OSIRIS) || defined(GOESP))
 __forceinline void checkinst(array<bool, 3>& inst)
 {
 	std::array<int, 4> CPUInfo{};
@@ -27,6 +28,7 @@ __forceinline void checkinst(array<bool, 3>& inst)
 	}
 	return;
 };
+#endif
 
 __forceinline bool bypass(DWORD dwProcess)
 {
@@ -175,9 +177,11 @@ int wmain()
 
 	#pragma endregion
 
+	#if (defined(OSIRIS) || defined(GOESP))
 	// Get processor instructions
 	array<bool, 3> inst{};
 	checkinst(inst);
+	#endif
 
 	#pragma region Osiris and GOESP part
 
@@ -186,7 +190,7 @@ int wmain()
 	#elif defined(GOESP)
 	wstring dllname = xorstr_(L"GOESP");
 	#else
-	wstring dllname = xorstr_(L"cheat.dll");
+	wstring dllname = xorstr_(L"library.dll");
 	#endif
 
 	#if (defined(OSIRIS) || defined(GOESP)) && defined(BETA)
