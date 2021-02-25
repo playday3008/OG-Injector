@@ -299,14 +299,6 @@ int wmain()
 
 #pragma endregion
 
-	#if (defined(OSIRIS) || defined(GOESP))
-	// Get processor instructions
-	JUNK;
-	array<bool, 3> inst{};
-	JUNK;
-	checkinst(inst);
-	#endif
-
 #pragma region Osiris and GOESP part
 
 #ifdef OSIRIS
@@ -330,7 +322,11 @@ int wmain()
 #endif
 
 #if (defined(OSIRIS) || defined(GOESP))
+	// Get processor instructions
 	JUNK;
+	array<bool, 3> inst{};
+	JUNK;
+	checkinst(inst);
 	if (inst.at(2))
 		dllname += xorstr_(L"_AVX2.dll");
 	else if (inst.at(1))
