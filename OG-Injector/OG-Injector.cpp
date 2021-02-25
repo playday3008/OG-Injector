@@ -177,9 +177,6 @@ int wmain()
 
 	#pragma endregion
 
-	#if (defined(OSIRIS) || defined(GOESP))
-	#endif
-
 	#pragma region Osiris and GOESP part
 
 	#ifdef OSIRIS
