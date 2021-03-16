@@ -17,6 +17,18 @@ using namespace std;
 //#define GOESP
 //#define BETA
 
+// Terminal colored output
+#define RESET   L"\033[0m"
+#define BLACK   L"\033[30m"      /* Black */
+#define RED     L"\033[31m"      /* Red */
+#define GREEN   L"\033[32m"      /* Green */
+#define YELLOW  L"\033[33m"      /* Yellow */
+#define BLUE    L"\033[34m"      /* Blue */
+#define MAGENTA L"\033[35m"      /* Magenta */
+#define CYAN    L"\033[36m"      /* Cyan */
+#define WHITE   L"\033[37m"      /* White */
+#define BOLD	L"\033[1m"       /* Bold */
+
 #if (defined(OSIRIS) || defined(GOESP))
 __forceinline void checkinst(array<bool, 3>& inst)
 {
@@ -60,28 +72,30 @@ __forceinline bool bypass(DWORD dwProcess)
 	JUNK;
 	if (!csgoProcessHandle) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't open csgo.exe to bypass LoadLibrary injection") << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't open csgo.exe to bypass LoadLibrary injection") <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return false;
-		JUNK;
 	}
 	JUNK;
 	auto ntdll = pLoadLibraryW(xorstr_(L"ntdll"));
 	JUNK;
 	if (!ntdll) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't load ntdll.dll module") << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't load ntdll.dll module") <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return false;
-		JUNK;
 	}
 	JUNK;
 	auto ntOpenFile = pGetProcAddress(ntdll, xorstr_("NtOpenFile"));
@@ -92,51 +106,54 @@ __forceinline bool bypass(DWORD dwProcess)
 		JUNK;
 		if (memcpy_s(originalBytes.data(), originalBytes.size(), ntOpenFile, 5)) {
 			JUNK;
-			_wsystem(xorstr_(L"Color 0C"));
-			JUNK;
-			wcout << xorstr_(L"Can't copy original NtOpenFile bytes to buffer") << endl;
+			wcout <<
+				xorstr_(RED) <<
+				xorstr_(L"Can't copy original NtOpenFile bytes to buffer") <<
+				xorstr_(RESET) <<
+				endl;
 			JUNK;
 			_wsystem(xorstr_(L"pause"));
 			JUNK;
 			return false;
-			JUNK;
 		}
 		if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), 5, NULL)) {
 			JUNK;
-			_wsystem(xorstr_(L"Color 0C"));
-			JUNK;
-			wcout << xorstr_(L"Can't write original NtOpenFile bytes to csgo.exe") << endl;
+			wcout <<
+				xorstr_(RED) <<
+				xorstr_(L"Can't write original NtOpenFile bytes to csgo.exe") <<
+				xorstr_(RESET) <<
+				endl;
 			JUNK;
 			_wsystem(xorstr_(L"pause"));
 			JUNK;
 			return false;
-			JUNK;
 		}
 		if (!pCloseHandle(csgoProcessHandle)) {
 			JUNK;
-			_wsystem(xorstr_(L"Color 0C"));
-			JUNK;
-			wcout << xorstr_(L"Can't close csgo.exe bypass handle") << endl;
+			wcout <<
+				xorstr_(RED) <<
+				xorstr_(L"Can't close csgo.exe bypass handle") <<
+				xorstr_(RESET) <<
+				endl;
 			JUNK;
 			_wsystem(xorstr_(L"pause"));
 			JUNK;
 			return false;
-			JUNK;
 		}
 		JUNK;
 		return true;
-		JUNK;
 	}
 	else {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't find NtOpenFile into ntdll.dll") << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't find NtOpenFile into ntdll.dll") <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return false;
-		JUNK;
 	}
 };
 
@@ -154,80 +171,58 @@ int wmain()
 {
 #pragma region Logo
 
-	JUNK;
-	wcout << xorstr_(L"   ____       _      _         __   __________  ___________ ____ ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0A"));
+	wcout << xorstr_(RED) << xorstr_(L"   ____       _      _         __   __________  ___________ ____ ") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"  / __ \\_____(_)____(_)____   / /  / ____/ __ \\/ ____/ ___// __ \\") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0B"));
+	wcout << xorstr_(GREEN) << xorstr_(L"  / __ \\_____(_)____(_)____   / /  / ____/ __ \\/ ____/ ___// __ \\") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L" / / / / ___/ / ___/ / ___/  / /  / / __/ / / / __/  \\__ \\/ /_/ /") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0C"));
+	wcout << xorstr_(YELLOW) << xorstr_(L" / / / / ___/ / ___/ / ___/  / /  / / __/ / / / __/  \\__ \\/ /_/ /") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"/ /_/ (__  ) / /  / (__  )  / /  / /_/ / /_/ / /___ ___/ / ____/ ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0D"));
+	wcout << xorstr_(BLUE) << xorstr_(L"/ /_/ (__  ) / /  / (__  )  / /  / /_/ / /_/ / /___ ___/ / ____/ ") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"\\____/____/_/_/  /_/____/  / /   \\____/\\____/_____//____/_/      ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0E"));
+	wcout << xorstr_(MAGENTA) << xorstr_(L"\\____/____/_/_/  /_/____/  / /   \\____/\\____/_____//____/_/") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"    ____  __            __///                                    ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0F"));
+	wcout << xorstr_(CYAN) << xorstr_(L"    ____  __            __///") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"   / __ \\/ /___ ___  __/ __ \\____ ___  __                        ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0A"));
+	wcout << xorstr_(RED) << xorstr_(L"   / __ \\/ /___ ___  __/ __ \\____ ___  __") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"  / /_/ / / __ `/ / / / / / / __ `/ / / /                        ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0B"));
+	wcout << xorstr_(GREEN) << xorstr_(L"  / /_/ / / __ `/ / / / / / / __ `/ / / /") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L" / ____/ / /_/ / /_/ / /_/ / /_/ / /_/ /                         ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0C"));
+	wcout << xorstr_(YELLOW) << xorstr_(L" / ____/ / /_/ / /_/ / /_/ / /_/ / /_/ /") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"/_/   /_/\\__,_/\\__, /_____/\\__,_/\\__, /                          ") << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0D"));
+	wcout << xorstr_(BLUE) << xorstr_(L"/_/   /_/\\__,_/\\__, /_____/\\__,_/\\__, /") << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	wcout << xorstr_(L"              /____/            /____/                           ") << endl << endl;
-	JUNK;
-	_wsystem(xorstr_(L"Color 0E"));
+	wcout << xorstr_(MAGENTA) << xorstr_(L"              /____/            /____/") << endl << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	JUNK;
-	_wsystem(xorstr_(L"Color 0F"));
-	JUNK;
-	wcout << xorstr_(L"Build: " __DATE__ ", " __TIME__ "") << endl << endl;
+	wcout <<
+		xorstr_(BOLD) <<
+		xorstr_(WHITE) <<
+		xorstr_(L"Build: " __DATE__ ", " __TIME__) <<
+		xorstr_(RESET) <<
+		endl << endl;
 	JUNK;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	JUNK;
-	_wsystem(xorstr_(L"Color 07"));
 
 #pragma endregion
 
@@ -254,7 +249,6 @@ int wmain()
 		sp.MicrosoftSignedOnly = 1;
 		JUNK;
 		pSetProcessMitigationPolicy(ProcessSignaturePolicy, &sp, sizeof(sp));
-		JUNK;
 	}
 
 	JUNK;
@@ -287,14 +281,15 @@ int wmain()
 		!pProcess32NextW)
 	{
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't load needed modules to correctly inject dll into process") << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't load needed modules to correctly inject dll into process") <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 
 #pragma endregion
@@ -327,6 +322,7 @@ int wmain()
 	array<bool, 3> inst{};
 	JUNK;
 	checkinst(inst);
+	JUNK;
 	if (inst.at(2))
 		dllname += xorstr_(L"_AVX2.dll");
 	else if (inst.at(1))
@@ -338,17 +334,29 @@ int wmain()
 
 	JUNK;
 	if (filesystem::exists(dllname))
-		wcout << xorstr_(L"DLL: ") << dllname << xorstr_(L" found") << endl;
+		wcout <<
+		xorstr_(GREEN) <<
+		xorstr_(L"DLL: ") <<
+		xorstr_(BOLD) <<
+		dllname <<
+		xorstr_(RESET) <<
+		xorstr_(GREEN) <<
+		xorstr_(L" found") <<
+		xorstr_(RESET) <<
+		endl;
 	else {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't find: ") << dllname << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't find: ") <<
+			xorstr_(BOLD) <<
+			dllname <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 
 #pragma endregion
@@ -358,7 +366,16 @@ int wmain()
 	JUNK;
 	wstring processName = xorstr_(PROCESS);
 	JUNK;
-	wcout << xorstr_(L"Finding ") << processName << xorstr_(L" process") << endl;
+	wcout <<
+		xorstr_(YELLOW) <<
+		xorstr_(L"Finding ") <<
+		xorstr_(BOLD) <<
+		processName <<
+		xorstr_(RESET) <<
+		xorstr_(YELLOW) <<
+		xorstr_(L" process") <<
+		xorstr_(RESET) <<
+		endl;
 
 	JUNK;
 	DWORD processId = NULL;
@@ -379,30 +396,50 @@ int wmain()
 	JUNK;
 	if (!processId) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't find: ") << processName << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't find: ") <<
+			xorstr_(BOLD) <<
+			processName <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	};
 
 	if (!pCloseHandle(snapshot)) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't close ") << processName << xorstr_(L" finder handle") << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't close ") <<
+			xorstr_(BOLD) <<
+			processName <<
+			xorstr_(RESET) <<
+			xorstr_(RED) <<
+			xorstr_(L" finder handle") <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 
 	JUNK;
-	wcout << xorstr_(L"Process: ") << processName << xorstr_(L" found with PID: ") << dec << processId << endl;
+	wcout <<
+		xorstr_(GREEN) <<
+		xorstr_(L"Process: ") <<
+		xorstr_(BOLD) <<
+		processName <<
+		xorstr_(RESET) <<
+		xorstr_(GREEN) <<
+		xorstr_(L" found with PID: ") <<
+		xorstr_(BOLD) <<
+		dec << processId <<
+		xorstr_(RESET) <<
+		endl;
 
 #pragma endregion
 
@@ -416,90 +453,138 @@ int wmain()
 	JUNK;
 	wstring dllPath = filesystem::absolute(dllname);
 	JUNK;
-	std::vector<wchar_t> dll(MAX_PATH);
+	vector<wchar_t> dll(MAX_PATH);
 	JUNK;
 	dllPath.copy(dll.data(), dllPath.size() + 1);
 	JUNK;
 	dll.at(dllPath.size()) = '\0';
 
 	JUNK;
-	wcout << xorstr_(L"Injecting ") << dllname << xorstr_(L" into ") << processName << endl;
+	wcout <<
+		xorstr_(YELLOW) <<
+		xorstr_(L"Injecting ") <<
+		xorstr_(BOLD) <<
+		dllname <<
+		xorstr_(RESET) <<
+		xorstr_(YELLOW) <<
+		xorstr_(L" into ") <<
+		xorstr_(BOLD) <<
+		processName <<
+		xorstr_(RESET) <<
+		endl;
 
 	JUNK;
 	auto hProcess = pOpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, processId);
 	JUNK;
 	if (!hProcess) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't open ") << processName << xorstr_(L" to write") << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't open ") <<
+			xorstr_(BOLD) <<
+			processName <<
+			xorstr_(RESET) <<
+			xorstr_(RED) <<
+			xorstr_(L" to write") <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 	JUNK;
 	auto allocatedMem = pVirtualAllocEx(hProcess, NULL, dll.size(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	JUNK;
 	if (!allocatedMem) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't allocate memory in ") << processName << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't allocate memory in ") <<
+			xorstr_(BOLD) <<
+			processName <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 	JUNK;
 	if (!pWriteProcessMemory(hProcess, allocatedMem, dll.data(), dll.size(), NULL)) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't write dll path to ") << processName << endl;
-		JUNK;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't write dll path to ") <<
+			xorstr_(BOLD) <<
+			processName <<
+			xorstr_(RESET) <<
+			endl;
+			=JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 	JUNK;
 	auto thread = pCreateRemoteThread(hProcess, 0, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryW), allocatedMem, 0, 0);
 	JUNK;
 	if (!thread) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't create remote thread with LoadLibrary module in ") << processName << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't create remote thread with LoadLibrary module in ") <<
+			xorstr_(BOLD) <<
+			processName <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 	JUNK;
 	if (!pCloseHandle(hProcess)) {
 		JUNK;
-		_wsystem(xorstr_(L"Color 0C"));
-		JUNK;
-		wcout << xorstr_(L"Can't close ") << processName << xorstr_(L"handle") << endl;
+		wcout <<
+			xorstr_(RED) <<
+			xorstr_(L"Can't close ") <<
+			xorstr_(BOLD) <<
+			processName <<
+			xorstr_(RESET) <<
+			xorstr_(RED) <<
+			xorstr_(L"handle") <<
+			xorstr_(RESET) <<
+			endl;
 		JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
-		JUNK;
 	}
 
 #pragma endregion
 
 	JUNK;
-	_wsystem(xorstr_(L"Color 0A"));
+	wcout <<
+		xorstr_(GREEN) <<
+		xorstr_(L"Successfully injected ") <<
+		xorstr_(BOLD) <<
+		xorstr_(CYAN) <<
+		dllname <<
+		xorstr_(RESET) <<
+		xorstr_(YELLOW) <<
+		xorstr_(L" into ") <<
+		xorstr_(BOLD) <<
+		xorstr_(RED) <<
+		processName <<
+		xorstr_(RESET) <<
+		endl;
 	JUNK;
-	wcout << xorstr_(L"Successfully injected ") << dllname << xorstr_(L" into ") << processName << endl;
-	JUNK;
-	wcout << xorstr_(L"You have 5 seconds to read this information, GOODBYE") << endl;
+	wcout <<
+		xorstr_(BOLD) <<
+		xorstr_(WHITE) <<
+		xorstr_(L"You have 5 seconds to read this information, GOODBYE") <<
+		xorstr_(RESET) <<
+		endl;
 	JUNK;
 	this_thread::sleep_for(chrono::seconds(5));
 
