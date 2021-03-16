@@ -411,8 +411,26 @@ int wmain()
 
 	#pragma endregion
 
-	wcout << xorstr_(L"Successfully injected ") << dllname << xorstr_(L" into ") << processName << endl;
-	wcout << xorstr_(L"You have 5 seconds to read this information, GOODBYE") << endl;
+	wcout <<
+		xorstr_(GREEN) <<
+		xorstr_(L"Successfully injected ") <<
+		xorstr_(BOLD) <<
+		xorstr_(CYAN) <<
+		dllname <<
+		xorstr_(RESET) <<
+		xorstr_(YELLOW) <<
+		xorstr_(L" into ") <<
+		xorstr_(BOLD) <<
+		xorstr_(RED) <<
+		processName <<
+		xorstr_(RESET) <<
+		endl;
+	wcout <<
+		xorstr_(BOLD) <<
+		xorstr_(WHITE) <<
+		xorstr_(L"You have 5 seconds to read this information, GOODBYE") <<
+		xorstr_(RESET) <<
+		endl;
 	this_thread::sleep_for(chrono::seconds(5));
 
 	return EXIT_SUCCESS;
