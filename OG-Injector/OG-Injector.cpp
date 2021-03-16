@@ -521,7 +521,7 @@ int wmain()
 			processName <<
 			xorstr_(RESET) <<
 			endl;
-			=JUNK;
+			JUNK;
 		_wsystem(xorstr_(L"pause"));
 		JUNK;
 		return EXIT_FAILURE;
