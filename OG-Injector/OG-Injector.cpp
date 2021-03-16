@@ -3,7 +3,7 @@
 using namespace std;
 
 // Process name
-constexpr auto PROCESS = L"csgo.exe";
+#define PROCESS L"csgo.exe"
 
 //#define OSIRIS
 //#define GOESP
