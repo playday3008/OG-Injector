@@ -12,7 +12,7 @@ using namespace std;
 #if (defined(OSIRIS) || defined(GOESP))
 __forceinline void checkinst(array<bool, 3>& inst)
 {
-	std::array<int, 4> CPUInfo{};
+	array<int, 4> CPUInfo{};
 	__cpuid(CPUInfo.data(), 0);
 	auto nIds = CPUInfo.at(0);
 
@@ -255,7 +255,7 @@ int wmain()
 	#pragma region Injection code
 
 	wstring dllPath = filesystem::absolute(dllname);
-	std::vector<wchar_t> dll(MAX_PATH);
+	vector<wchar_t> dll(MAX_PATH);
 	dllPath.copy(dll.data(), dllPath.size() + 1);
 	dll.at(dllPath.size()) = '\0';
 
