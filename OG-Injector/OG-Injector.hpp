@@ -10,6 +10,7 @@
 #include <TlHelp32.h>
 
 #include "xorstr.hpp"
+#include "termcolor.hpp"
 
 typedef FARPROC WINAPI GETPROCADDRESS(
     _In_    HMODULE hModule,
