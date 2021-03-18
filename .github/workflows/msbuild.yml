@@ -34,5 +34,5 @@ jobs:
     - name: Upload
       uses: actions/upload-artifact@v2
       with:
-        name: OG-Injector-Linux
+        name: OG-Injector
         path: ${{github.workspace}}/Release
