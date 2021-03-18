@@ -91,6 +91,7 @@
     <ClCompile Include="OG-Injector.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="JunkDef.hpp" />
     <ClInclude Include="OG-Injector.hpp" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="xorstr.hpp" />
