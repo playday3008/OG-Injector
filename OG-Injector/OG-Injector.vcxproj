@@ -93,6 +93,7 @@
   <ItemGroup>
     <ClInclude Include="OG-Injector.hpp" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="termcolor.hpp" />
     <ClInclude Include="xorstr.hpp" />
   </ItemGroup>
   <ItemGroup>
