@@ -124,27 +124,27 @@ int wmain()
 {
 	#pragma region Logo
 
-	wcout << xorstr_(BOLD) << xorstr_(RED) << xorstr_(L"   ____       _      _         __   __________  ___________ ____ ") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(RED) << xorstr_(LR"(   ____  ______   ____        _           __)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(GREEN) << xorstr_(L"  / __ \\_____(_)____(_)____   / /  / ____/ __ \\/ ____/ ___// __ \\") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(GREEN) << xorstr_(LR"(  / __ \/ ____/  /  _/___    (_)__  _____/ /_____  _____)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(YELLOW) << xorstr_(L" / / / / ___/ / ___/ / ___/  / /  / / __/ / / / __/  \\__ \\/ /_/ /") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(YELLOW) << xorstr_(LR"( / / / / / __    / // __ \  / / _ \/ ___/ __/ __ \/ ___/)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(BLUE) << xorstr_(L"/ /_/ (__  ) / /  / (__  )  / /  / /_/ / /_/ / /___ ___/ / ____/ ") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(BLUE) << xorstr_(LR"(/ /_/ / /_/ /  _/ // / / / / /  __/ /__/ /_/ /_/ / /)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(MAGENTA) << xorstr_(L"\\____/____/_/_/  /_/____/  / /   \\____/\\____/_____//____/_/") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(MAGENTA) << xorstr_(LR"(\____/\____/  /___/_/ /_/_/ /\___/\___/\__/\____/_/)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(CYAN) << xorstr_(L"    ____  __            __///") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(CYAN) << xorstr_(LR"(    ____  __           /___/)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(RED) << xorstr_(L"   / __ \\/ /___ ___  __/ __ \\____ ___  __") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(RED) << xorstr_(LR"(   / __ \/ /___ ___  __/ __ \____ ___  __)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(GREEN) << xorstr_(L"  / /_/ / / __ `/ / / / / / / __ `/ / / /") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(GREEN) << xorstr_(LR"(  / /_/ / / __ `/ / / / / / / __ `/ / / /)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(YELLOW) << xorstr_(L" / ____/ / /_/ / /_/ / /_/ / /_/ / /_/ /") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(YELLOW) << xorstr_(LR"( / ____/ / /_/ / /_/ / /_/ / /_/ / /_/ /)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(BLUE) << xorstr_(L"/_/   /_/\\__,_/\\__, /_____/\\__,_/\\__, /") << endl;
+	wcout << xorstr_(BOLD) << xorstr_(BLUE) << xorstr_(LR"(/_/   /_/\__,_/\__, /_____/\__,_/\__, /)") << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
-	wcout << xorstr_(BOLD) << xorstr_(MAGENTA) << xorstr_(L"              /____/            /____/") << endl << endl;
+	wcout << xorstr_(BOLD) << xorstr_(MAGENTA) << xorstr_(LR"(              /____/            /____/)") << endl << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
 	wcout << 
 		xorstr_(BOLD) << 
