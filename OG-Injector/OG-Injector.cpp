@@ -1,5 +1,13 @@
 ﻿#include "OG-Injector.hpp"
 
+#include <array>
+#include <filesystem>
+#include <iostream>
+#include <thread>
+
+#include "xorstr.hpp"
+#include "termcolor.hpp"
+
 using namespace std;
 
 // Process name
@@ -10,7 +18,9 @@ using namespace std;
 //#define BETA
 
 #if (defined(OSIRIS) || defined(GOESP))
-__forceinline void checkinst(array<bool, 3>& inst)
+#include <intrin.h>
+
+inline void checkinst(array<bool, 3>& inst)
 {
 	array<int, 4> CPUInfo{};
 	__cpuid(CPUInfo.data(), 0);
@@ -30,7 +40,7 @@ __forceinline void checkinst(array<bool, 3>& inst)
 };
 #endif
 
-__forceinline bool bypass(DWORD dwProcess)
+inline bool bypass(const DWORD dwProcess)
 {
 	// Restore original NtOpenFile from external process
 	//credits: Daniel Krupiñski(pozdro dla ciebie byczku <3)
@@ -54,9 +64,9 @@ __forceinline bool bypass(DWORD dwProcess)
 		_wsystem(xorstr_(L"pause"));
 		return false;
 	}
-	auto ntOpenFile = pGetProcAddress(ntdll, xorstr_("NtOpenFile"));
 
-	if (ntOpenFile) {
+	if (auto ntOpenFile = pGetProcAddress(ntdll, xorstr_("NtOpenFile"));
+		ntOpenFile) {
 		array<char, 5> originalBytes{};
 		if (memcpy_s(originalBytes.data(), originalBytes.size(), ntOpenFile, 5)) {
 			wcout << 
@@ -67,7 +77,7 @@ __forceinline bool bypass(DWORD dwProcess)
 			_wsystem(xorstr_(L"pause"));
 			return false;
 		}
-		if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), 5, NULL)) {
+		if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), 5, nullptr)) {
 			wcout << 
 				termcolor::red << 
 				xorstr_(L"Can't write original NtOpenFile bytes to csgo.exe") << 
@@ -87,15 +97,13 @@ __forceinline bool bypass(DWORD dwProcess)
 		}
 		return true;
 	}
-	else {
-		wcout << 
-			termcolor::red << 
-			xorstr_(L"Can't find NtOpenFile into ntdll.dll") << 
-			termcolor::reset << 
-			endl;
-		_wsystem(xorstr_(L"pause"));
-		return false;
-	}
+	wcout << 
+		termcolor::red << 
+		xorstr_(L"Can't find NtOpenFile into ntdll.dll") << 
+		termcolor::reset << 
+		endl;
+	_wsystem(xorstr_(L"pause"));
+	return false;
 };
 
 //   ____    ___                      ____

@@ -1,16 +1,7 @@
 #pragma once
 
-#include <array>
-#include <filesystem>
-#include <iostream>
-#include <thread>
-
 #include <Windows.h>
-#include <intrin.h>
 #include <TlHelp32.h>
-
-#include "xorstr.hpp"
-#include "termcolor.hpp"
 
 typedef FARPROC WINAPI GETPROCADDRESS(
     _In_    HMODULE hModule,
@@ -94,21 +85,21 @@ typedef BOOL WINAPI PROCESS32NEXTW(
 ); // Process32NextW
 typedef PROCESS32NEXTW FAR* LPPROCESS32NEXTW;
 
-LPGETPROCADDRESS pGetProcAddress;
-LPGETMODULEHANDLEW pGetModuleHandleW;
-LPLOADLIBRARYW pLoadLibraryW;
-LPOPENPROCESS pOpenProcess;
-LPCLOSEHANDLE pCloseHandle;
-LPSETPROCESSMITIGATIONPOLICY pSetProcessMitigationPolicy;
-LPVIRTUALALLOCEX pVirtualAllocEx;
-LPWRITEPROCESSMEMORY pWriteProcessMemory;
-LPCREATEREMOTETHREAD pCreateRemoteThread;
-LPCREATETOOLHELP32SNAPSHOT pCreateToolhelp32Snapshot;
-LPPROCESS32FIRSTW pProcess32FirstW;
-LPPROCESS32NEXTW pProcess32NextW;
+inline LPGETPROCADDRESS pGetProcAddress;
+inline LPGETMODULEHANDLEW pGetModuleHandleW;
+inline LPLOADLIBRARYW pLoadLibraryW;
+inline LPOPENPROCESS pOpenProcess;
+inline LPCLOSEHANDLE pCloseHandle;
+inline LPSETPROCESSMITIGATIONPOLICY pSetProcessMitigationPolicy;
+inline LPVIRTUALALLOCEX pVirtualAllocEx;
+inline LPWRITEPROCESSMEMORY pWriteProcessMemory;
+inline LPCREATEREMOTETHREAD pCreateRemoteThread;
+inline LPCREATETOOLHELP32SNAPSHOT pCreateToolhelp32Snapshot;
+inline LPPROCESS32FIRSTW pProcess32FirstW;
+inline LPPROCESS32NEXTW pProcess32NextW;
 
 template <typename LPtypedef>
-__forceinline constexpr auto DynamicLoad(HMODULE Module, const char* Func)
+constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 {
     return reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
 };
