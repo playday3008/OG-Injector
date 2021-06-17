@@ -196,7 +196,7 @@ int wmain()
 	#elif defined(GOESP)
 	wstring dllname = xorstr_(L"GOESP");
 	#else
-	wstring dllname = xorstr_(L"library.dll");
+	const wstring dllname = xorstr_(L"library.dll");
 	#endif
 
 	#if (defined(OSIRIS) || defined(GOESP)) && defined(BETA)
@@ -243,7 +243,7 @@ int wmain()
 
 	#pragma region Find process
 
-	wstring processName = xorstr_(PROCESS);
+	const wstring processName = xorstr_(PROCESS);
 	wcout <<
 		termcolor::yellow <<
 		xorstr_(L"Finding ") <<
@@ -256,9 +256,9 @@ int wmain()
 		endl;
 
 	DWORD processId = NULL;
-	PROCESSENTRY32W entry{ sizeof(entry) };
+	PROCESSENTRY32W entry{ sizeof entry };
 
-	auto snapshot = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+	auto* snapshot = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (pProcess32FirstW(snapshot, &entry))
 		do {
 			if (wstring(entry.szExeFile) == processName)
@@ -313,7 +313,7 @@ int wmain()
 
 	#pragma region Injection code
 
-	wstring dllPath = filesystem::absolute(dllname);
+	const wstring dllPath = filesystem::absolute(dllname);
 	vector<wchar_t> dll(MAX_PATH);
 	dllPath.copy(dll.data(), dllPath.size() + 1);
 	dll.at(dllPath.size()) = '\0';
@@ -331,7 +331,7 @@ int wmain()
 		termcolor::reset <<
 		endl;
 
-	auto hProcess = pOpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, processId);
+	auto* hProcess = pOpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, processId);
 	if (!hProcess) {
 		wcout << 
 			termcolor::red << 
@@ -346,7 +346,7 @@ int wmain()
 		_wsystem(xorstr_(L"pause"));
 		return EXIT_FAILURE;
 	}
-	auto allocatedMem = pVirtualAllocEx(hProcess, NULL, dll.size(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	auto* allocatedMem = pVirtualAllocEx(hProcess, nullptr, dll.size(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (!allocatedMem) {
 		wcout << 
 			termcolor::red << 
@@ -358,7 +358,7 @@ int wmain()
 		_wsystem(xorstr_(L"pause"));
 		return EXIT_FAILURE;
 	}
-	if (!pWriteProcessMemory(hProcess, allocatedMem, dll.data(), dll.size(), NULL)) {
+	if (!pWriteProcessMemory(hProcess, allocatedMem, dll.data(), dll.size(), nullptr)) {
 		wcout << 
 			termcolor::red << 
 			xorstr_(L"Can't write dll path to ") << 
@@ -369,7 +369,7 @@ int wmain()
 		_wsystem(xorstr_(L"pause"));
 		return EXIT_FAILURE;
 	}
-	auto thread = pCreateRemoteThread(hProcess, 0, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryW), allocatedMem, 0, 0);
+	auto* thread = pCreateRemoteThread(hProcess, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryW), allocatedMem, 0, nullptr);
 	if (!thread) {
 		wcout << 
 			termcolor::red << 
