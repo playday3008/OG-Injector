@@ -264,7 +264,7 @@ int wmain()
 		endl;
 
 	DWORD processId = NULL;
-	PROCESSENTRY32W entry{ sizeof entry };
+	PROCESSENTRY32W entry{};
 
 	auto* snapshot = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (pProcess32FirstW(snapshot, &entry))
