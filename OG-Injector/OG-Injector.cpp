@@ -164,7 +164,7 @@ int wmain()
 		// Disable injecting non microsoft libraries
 		PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY sp{};
 		sp.MicrosoftSignedOnly = 1;
-		pSetProcessMitigationPolicy(ProcessSignaturePolicy, &sp, sizeof(sp));
+		pSetProcessMitigationPolicy(ProcessSignaturePolicy, &sp, sizeof sp);
 	}
 
 	pLoadLibraryW = DynamicLoad<LPLOADLIBRARYW>(kernel32, xorstr_("LoadLibraryW"));
@@ -264,7 +264,7 @@ int wmain()
 		endl;
 
 	DWORD processId = NULL;
-	PROCESSENTRY32W entry{};
+	PROCESSENTRY32W entry{ sizeof entry };
 
 	auto* snapshot = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (pProcess32FirstW(snapshot, &entry))
