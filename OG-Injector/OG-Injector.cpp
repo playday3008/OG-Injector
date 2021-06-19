@@ -12,6 +12,7 @@ using namespace std;
 
 // Process name
 #define PROCESS L"csgo.exe"
+#define CSGO
 
 //#define OSIRIS
 //#define GOESP
@@ -24,26 +25,27 @@ inline void checkinst(array<bool, 3>& inst)
 {
 	array<int, 4> CPUInfo{};
 	__cpuid(CPUInfo.data(), 0);
-	auto nIds = CPUInfo.at(0);
+	const auto nIds = CPUInfo.at(0);
 
 	//  Detect Features
 	if (nIds >= 0x00000001) {
 		__cpuid(CPUInfo.data(), 0x00000001);
+		// SSE2
 		inst.at(0) = (CPUInfo.at(3) & (1 << 26)) != 0;
+		// AVX
 		inst.at(1) = (CPUInfo.at(2) & (1 << 28)) != 0;
 	}
 	if (nIds >= 0x00000007) {
 		__cpuid(CPUInfo.data(), 0x00000007);
+		// AVX2
 		inst.at(2) = (CPUInfo.at(1) & (1 << 5)) != 0;
 	}
-	return;
-};
+}
 #endif
 
-inline bool bypass(const DWORD dwProcess)
+#ifdef CSGO
+inline array<char, 5> bypass(const DWORD dwProcess)
 {
-	// Restore original NtOpenFile from external process
-	//credits: Daniel Krupiñski(pozdro dla ciebie byczku <3)
 	auto csgoProcessHandle = pOpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, dwProcess);
 	if (!csgoProcessHandle) {
 		wcout << 
@@ -52,7 +54,7 @@ inline bool bypass(const DWORD dwProcess)
 			termcolor::reset << 
 			endl;
 		_wsystem(xorstr_(L"pause"));
-		return false;
+		return {};
 	}
 	auto ntdll = pLoadLibraryW(xorstr_(L"ntdll"));
 	if (!ntdll) {
@@ -62,12 +64,13 @@ inline bool bypass(const DWORD dwProcess)
 			termcolor::reset << 
 			endl;
 		_wsystem(xorstr_(L"pause"));
-		return false;
+		return {};
 	}
 
 	if (auto ntOpenFile = pGetProcAddress(ntdll, xorstr_("NtOpenFile"));
 		ntOpenFile) {
 		array<char, 5> originalBytes{};
+		array<char, 5> csgoBytes{};
 		if (memcpy_s(originalBytes.data(), originalBytes.size(), ntOpenFile, 5)) {
 			wcout << 
 				termcolor::red << 
@@ -75,16 +78,25 @@ inline bool bypass(const DWORD dwProcess)
 				termcolor::reset << 
 				endl;
 			_wsystem(xorstr_(L"pause"));
-			return false;
+			return {};
 		}
-		if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), 5, nullptr)) {
+		if (!pReadProcessMemory(csgoProcessHandle, ntOpenFile, csgoBytes.data(), csgoBytes.size(), nullptr)) {
+			wcout <<
+				termcolor::red <<
+				xorstr_(L"Can't read modified NtOpenFile bytes from csgo.exe") <<
+				termcolor::reset <<
+				endl;
+			_wsystem(xorstr_(L"pause"));
+			return {};
+		}
+		if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), originalBytes.size(), nullptr)) {
 			wcout << 
 				termcolor::red << 
 				xorstr_(L"Can't write original NtOpenFile bytes to csgo.exe") << 
 				termcolor::reset << 
 				endl;
 			_wsystem(xorstr_(L"pause"));
-			return false;
+			return {};
 		}
 		if (!pCloseHandle(csgoProcessHandle)) {
 			wcout << 
@@ -93,18 +105,73 @@ inline bool bypass(const DWORD dwProcess)
 				termcolor::reset << 
 				endl;
 			_wsystem(xorstr_(L"pause"));
+			return {};
+		}
+		return csgoBytes;
+	}
+	wcout << 
+		termcolor::red << 
+		xorstr_(L"Can't find NtOpenFile in ntdll.dll") << 
+		termcolor::reset << 
+		endl;
+	_wsystem(xorstr_(L"pause"));
+	return {};
+}
+
+inline bool unbypass(const DWORD dwProcess, array<char, 5> csgoBytes)
+{
+	auto csgoProcessHandle = pOpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, dwProcess);
+	if (!csgoProcessHandle) {
+		wcout <<
+			termcolor::red <<
+			xorstr_(L"Can't open csgo.exe to restore NtOpenFile csgo bytes") <<
+			termcolor::reset <<
+			endl;
+		_wsystem(xorstr_(L"pause"));
+		return false;
+	}
+	auto ntdll = pLoadLibraryW(xorstr_(L"ntdll"));
+	if (!ntdll) {
+		wcout <<
+			termcolor::red <<
+			xorstr_(L"Can't load ntdll.dll module") <<
+			termcolor::reset <<
+			endl;
+		_wsystem(xorstr_(L"pause"));
+		return false;
+	}
+
+	if (auto ntOpenFile = pGetProcAddress(ntdll, xorstr_("NtOpenFile"));
+		ntOpenFile) {
+		if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, csgoBytes.data(), csgoBytes.size(), nullptr)) {
+			wcout <<
+				termcolor::red <<
+				xorstr_(L"Can't write original csgo NtOpenFile bytes to csgo.exe") <<
+				termcolor::reset <<
+				endl;
+			_wsystem(xorstr_(L"pause"));
+			return false;
+		}
+		if (!pCloseHandle(csgoProcessHandle)) {
+			wcout <<
+				termcolor::red <<
+				xorstr_(L"Can't close csgo.exe bypass handle") <<
+				termcolor::reset <<
+				endl;
+			_wsystem(xorstr_(L"pause"));
 			return false;
 		}
 		return true;
 	}
-	wcout << 
-		termcolor::red << 
-		xorstr_(L"Can't find NtOpenFile into ntdll.dll") << 
-		termcolor::reset << 
+	wcout <<
+		termcolor::red <<
+		xorstr_(L"Can't find NtOpenFile in ntdll.dll") <<
+		termcolor::reset <<
 		endl;
 	_wsystem(xorstr_(L"pause"));
 	return false;
-};
+}
+#endif
 
 //   ____    ___                      ____
 //  /\  _`\ /\_ \                    /\  _`\
@@ -172,6 +239,7 @@ int wmain()
 	pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, xorstr_("OpenProcess"));
 	pCloseHandle = DynamicLoad<LPCLOSEHANDLE>(kernel32, xorstr_("CloseHandle"));
 	pVirtualAllocEx = DynamicLoad<LPVIRTUALALLOCEX>(kernel32, xorstr_("VirtualAllocEx"));
+	pReadProcessMemory = DynamicLoad<LPREADPROCESSMEMORY>(kernel32, xorstr_("ReadProcessMemory"));
 	pWriteProcessMemory = DynamicLoad<LPWRITEPROCESSMEMORY>(kernel32, xorstr_("WriteProcessMemory"));
 	pCreateRemoteThread = DynamicLoad<LPCREATEREMOTETHREAD>(kernel32, xorstr_("CreateRemoteThread"));
 
@@ -315,9 +383,12 @@ int wmain()
 
 	#pragma endregion
 
+#ifdef CSGO
 	// Bypass LoadLibrary injection for csgo
-	if (!bypass(processId))
+	const auto csgoBytes = bypass(processId);
+	if constexpr (csgoBytes.empty())
 		return EXIT_FAILURE;
+#endif
 
 	#pragma region Injection code
 
@@ -405,6 +476,12 @@ int wmain()
 	}
 
 	#pragma endregion
+
+#ifdef CSGO
+	// Restore NtOpenFile bytes
+	if (!unbypass(processId, csgoBytes))
+		return EXIT_FAILURE;
+#endif
 
 	wcout <<
 		termcolor::green <<
