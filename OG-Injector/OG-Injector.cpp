@@ -217,15 +217,15 @@ int wmain()
 
 	if (filesystem::exists(dllname))
 		wcout <<
-		termcolor::green <<
-		xorstr_(L"DLL: ") <<
-		termcolor::bright_green <<
-		dllname <<
-		termcolor::reset <<
-		termcolor::green <<
-		xorstr_(L" found") <<
-		termcolor::reset <<
-		endl;
+			termcolor::green <<
+			xorstr_(L"DLL: ") <<
+			termcolor::bright_green <<
+			dllname <<
+			termcolor::reset <<
+			termcolor::green <<
+			xorstr_(L" found") <<
+			termcolor::reset <<
+			endl;
 	else {
 		wcout << 
 			termcolor::red << 
