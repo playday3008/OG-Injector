@@ -31,13 +31,6 @@ typedef BOOL WINAPI CLOSEHANDLE(
 ); // pCloseHandle
 typedef CLOSEHANDLE FAR* LPCLOSEHANDLE;
 
-typedef BOOL WINAPI SETPROCESSMITIGATIONPOLICY(
-    _In_                        PROCESS_MITIGATION_POLICY   MitigationPolicy,
-    _In_reads_bytes_(dwLength)  PVOID                       lpBuffer,
-    _In_                        SIZE_T                      dwLength
-); // SetProcessMitigationPolicy
-typedef SETPROCESSMITIGATIONPOLICY FAR* LPSETPROCESSMITIGATIONPOLICY;
-
 typedef LPVOID WINAPI VIRTUALALLOCEX(
     _In_        HANDLE  hProcess,
     _In_opt_    LPVOID  lpAddress,
@@ -90,7 +83,6 @@ inline LPGETMODULEHANDLEW pGetModuleHandleW;
 inline LPLOADLIBRARYW pLoadLibraryW;
 inline LPOPENPROCESS pOpenProcess;
 inline LPCLOSEHANDLE pCloseHandle;
-inline LPSETPROCESSMITIGATIONPOLICY pSetProcessMitigationPolicy;
 inline LPVIRTUALALLOCEX pVirtualAllocEx;
 inline LPWRITEPROCESSMEMORY pWriteProcessMemory;
 inline LPCREATEREMOTETHREAD pCreateRemoteThread;

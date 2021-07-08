@@ -24,20 +24,19 @@ inline void checkinst(array<bool, 3>& inst)
 {
 	array<int, 4> CPUInfo{};
 	__cpuid(CPUInfo.data(), 0);
-	auto nIds = CPUInfo.at(0);
+	const auto nIds = CPUInfo.at(0);
 
 	//  Detect Features
 	if (nIds >= 0x00000001) {
 		__cpuid(CPUInfo.data(), 0x00000001);
-		inst.at(0) = (CPUInfo.at(3) & (1 << 26)) != 0;
-		inst.at(1) = (CPUInfo.at(2) & (1 << 28)) != 0;
+		inst.at(0) = (CPUInfo.at(3) & 1 << 26) != 0;
+		inst.at(1) = (CPUInfo.at(2) & 1 << 28) != 0;
 	}
 	if (nIds >= 0x00000007) {
 		__cpuid(CPUInfo.data(), 0x00000007);
-		inst.at(2) = (CPUInfo.at(1) & (1 << 5)) != 0;
+		inst.at(2) = (CPUInfo.at(1) & 1 << 5) != 0;
 	}
-	return;
-};
+}
 #endif
 
 inline bool bypass(const DWORD dwProcess)
@@ -104,7 +103,7 @@ inline bool bypass(const DWORD dwProcess)
 		endl;
 	_wsystem(xorstr_(L"pause"));
 	return false;
-};
+}
 
 //   ____    ___                      ____
 //  /\  _`\ /\_ \                    /\  _`\
@@ -144,7 +143,7 @@ int wmain()
 	this_thread::sleep_for(chrono::milliseconds(50));
 	wcout << 
 		termcolor::bright_white <<
-		xorstr_(L"Build: " __DATE__ ", " __TIME__) << 
+		xorstr_(L"Build: " __TIMESTAMP__) <<
 		termcolor::reset << 
 		endl << endl;
 	this_thread::sleep_for(chrono::milliseconds(50));
@@ -158,14 +157,6 @@ int wmain()
 	auto kernel32 = pGetModuleHandleW(xorstr_(L"kernel32"));
 	if (!kernel32)
 		return EXIT_FAILURE;
-
-	pSetProcessMitigationPolicy = DynamicLoad<LPSETPROCESSMITIGATIONPOLICY>(kernel32, xorstr_("SetProcessMitigationPolicy"));
-	if (pSetProcessMitigationPolicy) {
-		// Disable injecting non microsoft libraries
-		PROCESS_MITIGATION_BINARY_SIGNATURE_POLICY sp{};
-		sp.MicrosoftSignedOnly = 1;
-		pSetProcessMitigationPolicy(ProcessSignaturePolicy, &sp, sizeof sp);
-	}
 
 	pLoadLibraryW = DynamicLoad<LPLOADLIBRARYW>(kernel32, xorstr_("LoadLibraryW"));
 
