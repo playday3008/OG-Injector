@@ -36,7 +36,7 @@ typedef _Success_(return != 0) DWORD WINAPI FORMATMESSAGEW(
     _In_        DWORD dwLanguageId,
     _When_((dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER) != 0, _At_((LPWSTR*)lpBuffer, _Outptr_result_z_))
     _When_((dwFlags & FORMAT_MESSAGE_ALLOCATE_BUFFER) == 0, _Out_writes_z_(nSize))
-				LPWSTR lpBuffer,
+                LPWSTR lpBuffer,
     _In_        DWORD nSize,
     _In_opt_    va_list * Arguments
 ); // FormatMessageW
@@ -121,8 +121,8 @@ constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 #ifdef _DEBUG
     cout << xorstr_("Loading function '") << termcolor::green << Func << termcolor::reset << xorstr_("' from module '") << termcolor::yellow << xorstr_("0x") << Module << termcolor::reset << xorstr_("'") << endl;
     auto _ = reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
-	if (_)
-		cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << _ << termcolor::reset << xorstr_("'") << endl;
+    if (_)
+        cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << _ << termcolor::reset << xorstr_("'") << endl;
     else
         cout << xorstr_("Failed to load function") << endl;
     return _;
