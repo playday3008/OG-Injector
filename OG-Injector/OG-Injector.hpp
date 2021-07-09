@@ -8,6 +8,14 @@
 #include "xorstr.hpp"
 #include "termcolor.hpp"
 
+#include "JunkDef.hpp"
+
+// Don't change this!
+#define _JUNK_BLOCK(s) __asm jmp s JUNKS __asm s:
+#define A_JUNK_BLOCK(B, F) F(LABEL##B)
+#define B_JUNK_BLOCK(C, F) A_JUNK_BLOCK(C, F)
+#define JUNK B_JUNK_BLOCK(__COUNTER__, _JUNK_BLOCK)
+
 using namespace std;
 
 typedef FARPROC WINAPI GETPROCADDRESS(
@@ -120,13 +128,16 @@ constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 {
 #ifdef _DEBUG
     cout << xorstr_("Loading function '") << termcolor::green << Func << termcolor::reset << xorstr_("' from module '") << termcolor::yellow << xorstr_("0x") << Module << termcolor::reset << xorstr_("'") << endl;
+    JUNK;
     auto _ = reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
+    JUNK;
     if (_)
         cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << _ << termcolor::reset << xorstr_("'") << endl;
     else
         cout << xorstr_("Failed to load function") << endl;
     return _;
 #else
+    JUNK;
     return reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
 #endif
 };
