@@ -4,9 +4,6 @@
 #include <filesystem>
 #include <thread>
 
-#include "xorstr.hpp"
-#include "termcolor.hpp"
-
 // Process name
 #define PROCESS L"csgo.exe"
 

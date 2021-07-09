@@ -7,6 +7,7 @@
 #include <TlHelp32.h>
 
 #include "xorstr.hpp"
+#include "termcolor.hpp"
 
 using namespace std;
 
@@ -119,10 +120,10 @@ template <typename LPtypedef>
 constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 {
 #ifdef _DEBUG
-    cout << xorstr_("Loading function '") << Func << xorstr_("' from module '0x") << Module << xorstr_("'") << endl;
+    cout << xorstr_("Loading function '") << termcolor::green << Func << termcolor::reset << xorstr_("' from module '") << termcolor::yellow << xorstr_("0x") << Module << termcolor::reset << xorstr_("'") << endl;
     auto _ = reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
 	if (_)
-		cout << xorstr_("Function '") << Func << xorstr_("' loaded from module '0x") << Module << xorstr_("' with address '0x") << _ << xorstr_("'") << endl;
+		cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << _ << termcolor::reset << xorstr_("'") << endl;
     else
         cout << xorstr_("Failed to load function") << endl;
     return _;
