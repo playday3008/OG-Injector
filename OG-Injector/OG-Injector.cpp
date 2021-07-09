@@ -201,12 +201,12 @@ int wmain()
     pProcess32FirstW = DynamicLoad<LPPROCESS32FIRSTW>(kernel32, xorstr_("Process32FirstW"));
     pProcess32NextW = DynamicLoad<LPPROCESS32NEXTW>(kernel32, xorstr_("Process32NextW"));
 
-    if (!pGetProcAddress                || !pGetModuleHandleW            ||
-        !pLoadLibraryW                    || !pGetLastError                ||
-        !pFormatMessageW                || !pOpenProcess                ||
-        !pCloseHandle                    || !pVirtualAllocEx                ||
-        !pWriteProcessMemory            || !pCreateRemoteThread            ||
-        !pCreateToolhelp32Snapshot        || !pProcess32FirstW            ||
+    if (!pGetProcAddress            || !pGetModuleHandleW   ||
+        !pLoadLibraryW              || !pGetLastError       ||
+        !pFormatMessageW            || !pOpenProcess        ||
+        !pCloseHandle               || !pVirtualAllocEx     ||
+        !pWriteProcessMemory        || !pCreateRemoteThread ||
+        !pCreateToolhelp32Snapshot  || !pProcess32FirstW    ||
         !pProcess32NextW) 
     {
         wcout << 
