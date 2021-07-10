@@ -299,25 +299,6 @@ int wmain()
     }
     JUNK;
 
-    if (!pGetProcAddress            || !pGetModuleHandleW   ||
-        !pLoadLibraryW              || !pGetLastError       ||
-        !pFormatMessageW            || !pOpenProcess        ||
-        !pCloseHandle               || !pVirtualAllocEx     ||
-        !pWriteProcessMemory        || !pCreateRemoteThread ||
-        !pCreateToolhelp32Snapshot  || !pProcess32FirstW    ||
-        !pProcess32NextW) 
-    {
-        JUNK;
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't load needed functions to correct dll injection into process") << 
-            termcolor::reset << 
-            endl;
-        JUNK;
-        return ErrorExit(xorstr_(L"DynamicLoad<>()"));
-    }
-    JUNK;
-
     wcout << xorstr_(L"WinAPI functions loaded") << endl;
     JUNK;
 
