@@ -230,22 +230,6 @@ int wmain()
         return ErrorExit(xorstr_(L"DynamicLoad<>()"));
     }
 
-    if (!pGetProcAddress            || !pGetModuleHandleW   ||
-        !pLoadLibraryW              || !pGetLastError       ||
-        !pFormatMessageW            || !pOpenProcess        ||
-        !pCloseHandle               || !pVirtualAllocEx     ||
-        !pWriteProcessMemory        || !pCreateRemoteThread ||
-        !pCreateToolhelp32Snapshot  || !pProcess32FirstW    ||
-        !pProcess32NextW) 
-    {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't load needed functions to correct dll injection into process") << 
-            termcolor::reset << 
-            endl;
-        return ErrorExit(xorstr_(L"DynamicLoad<>()"));
-    }
-
     wcout << xorstr_(L"WinAPI functions loaded") << endl;
 
     #pragma endregion
