@@ -5,7 +5,7 @@
 #include <thread>
 
 // Process name
-#define PROCESS L"csgo.exe"
+#define PROCESS L"IEMonitor.exe"
 
 //#define OSIRIS
 //#define GOESP
@@ -46,11 +46,11 @@ inline void checkinst(array<bool, 3>& inst)
 }
 #endif
 
+// Retrieve the system error message for the last-error code
 int ErrorExit(const wstring& lpszFunction)
 {
     JUNK;
-    // Retrieve the system error message for the last-error code
-    if (!(pGetLastError && pFormatMessageW))
+    if (!pGetLastError)
         return EXIT_FAILURE;
 
     JUNK;
@@ -60,6 +60,10 @@ int ErrorExit(const wstring& lpszFunction)
     if (!dw)
         wcout << xorstr_(L"GetLastError() didn't catch anything") << endl;
     else {
+        JUNK;
+        if (!pFormatMessageW)
+            return EXIT_FAILURE;
+            
         JUNK;
         LPWSTR lpMsgBuf;
         JUNK;
@@ -75,12 +79,18 @@ int ErrorExit(const wstring& lpszFunction)
             0, nullptr);
         JUNK;
 
-        wcout << xorstr_("GetLastError() catched error:") << endl <<
+        wcout << termcolor::yellow << xorstr_(L"GetLastError()") << termcolor::reset << xorstr_(L" catched error:") << endl <<
+            termcolor::cyan <<
             lpszFunction <<
+            termcolor::reset <<
             xorstr_(L" failed with error ") <<
+            termcolor::bright_red <<
             to_wstring(dw) <<
+            termcolor::reset <<
             xorstr_(L": ") <<
+            termcolor::bright_yellow <<
             lpMsgBuf <<
+            termcolor::reset <<
             endl;
         JUNK;
 
@@ -111,7 +121,7 @@ inline int bypass(const DWORD dwProcess)
             termcolor::reset <<
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"OpenProcess"));
+        return ErrorExit(xorstr_(L"OpenProcess()"));
     }
     JUNK;
     auto ntdll = pLoadLibraryW(xorstr_(L"ntdll"));
@@ -124,7 +134,7 @@ inline int bypass(const DWORD dwProcess)
             termcolor::reset <<
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"LoadLibraryW"));
+        return ErrorExit(xorstr_(L"LoadLibraryW()"));
     }
     JUNK;
 
@@ -141,7 +151,7 @@ inline int bypass(const DWORD dwProcess)
                 termcolor::reset <<
                 endl;
             JUNK;
-            return ErrorExit(xorstr_(L"memcpy_s"));
+            return ErrorExit(xorstr_(L"memcpy_s()"));
         }
         JUNK;
         if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), 5, nullptr)) {
@@ -152,7 +162,7 @@ inline int bypass(const DWORD dwProcess)
                 termcolor::reset <<
                 endl;
             JUNK;
-            return ErrorExit(xorstr_(L"WriteProcessMemory"));
+            return ErrorExit(xorstr_(L"WriteProcessMemory()"));
         }
         JUNK;
         if (!pCloseHandle(csgoProcessHandle)) {
@@ -163,7 +173,7 @@ inline int bypass(const DWORD dwProcess)
                 termcolor::reset <<
                 endl;
             JUNK;
-            return ErrorExit(xorstr_(L"CloseHandle"));
+            return ErrorExit(xorstr_(L"CloseHandle()"));
         }
         JUNK;
         return EXIT_SUCCESS;
@@ -175,7 +185,7 @@ inline int bypass(const DWORD dwProcess)
         termcolor::reset <<
         endl;
     JUNK;
-    return ErrorExit(xorstr_(L"GetProcAddress"));
+    return ErrorExit(xorstr_(L"GetProcAddress()"));
 }
 
 //   ____    ___                      ____
@@ -280,7 +290,7 @@ int wmain()
             termcolor::reset << 
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"DynamicLoad"));
+        return ErrorExit(xorstr_(L"DynamicLoad<>()"));
     }
     JUNK;
 
@@ -382,7 +392,7 @@ int wmain()
             termcolor::reset <<
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"CreateToolhelp32Snapshot"));
+        return ErrorExit(xorstr_(L"CreateToolhelp32Snapshot()"));
     }
     JUNK;
     if (pProcess32FirstW(snapshot, &entry))
@@ -422,7 +432,7 @@ int wmain()
             termcolor::reset << 
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"CloseHandle"));
+        return ErrorExit(xorstr_(L"CloseHandle()"));
     }
 
     JUNK;
@@ -443,8 +453,9 @@ int wmain()
 
     JUNK;
     // Bypass LoadLibrary injection for csgo
-    if (bypass(processId) != EXIT_SUCCESS)
-        return EXIT_FAILURE;
+    if constexpr (!wstring_view(PROCESS).compare(L"csgo.exe"))
+      if (bypass(processId) != EXIT_SUCCESS)
+         return EXIT_FAILURE;
 
     #pragma region Injection code
 
@@ -487,7 +498,7 @@ int wmain()
             termcolor::reset <<
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"OpenProcess"));
+        return ErrorExit(xorstr_(L"OpenProcess()"));
     }
     JUNK;
     auto* allocatedMem = pVirtualAllocEx(hProcess, nullptr, dll.size(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -502,7 +513,7 @@ int wmain()
             termcolor::reset << 
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"VirtualAllocEx"));
+        return ErrorExit(xorstr_(L"VirtualAllocEx()"));
     }
     JUNK;
     if (!pWriteProcessMemory(hProcess, allocatedMem, dll.data(), dll.size(), nullptr)) {
@@ -515,7 +526,7 @@ int wmain()
             termcolor::reset << 
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"WriteProcessMemory"));
+        return ErrorExit(xorstr_(L"WriteProcessMemory()"));
     }
     JUNK;
     auto* thread = pCreateRemoteThread(hProcess, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryW), allocatedMem, 0, nullptr);
@@ -530,7 +541,7 @@ int wmain()
             termcolor::reset << 
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"CreateRemoteThread"));
+        return ErrorExit(xorstr_(L"CreateRemoteThread()"));
     }
     JUNK;
     if (!pCloseHandle(hProcess)) {
@@ -546,7 +557,7 @@ int wmain()
             termcolor::reset << 
             endl;
         JUNK;
-        return ErrorExit(xorstr_(L"CloseHandle"));
+        return ErrorExit(xorstr_(L"CloseHandle()"));
     }
 
     #pragma endregion
@@ -567,11 +578,11 @@ int wmain()
     JUNK;
     wcout <<
         termcolor::bright_white <<
-        xorstr_(L"You have 10 seconds to read this information, GOODBYE") <<
+        xorstr_(L"You have 5 seconds to read this information, GOODBYE") <<
         termcolor::reset <<
         endl;
     JUNK;
-    this_thread::sleep_for(chrono::seconds(10));
+    this_thread::sleep_for(chrono::seconds(5));
     JUNK;
 
     return EXIT_SUCCESS;
