@@ -51,7 +51,7 @@ typedef OPENPROCESS FAR* LPOPENPROCESS;
 
 typedef BOOL WINAPI CLOSEHANDLE(
     _In_ _Post_ptr_invalid_ HANDLE hObject
-); // pCloseHandle
+); // CloseHandle
 typedef CLOSEHANDLE FAR* LPCLOSEHANDLE;
 
 typedef _Ret_maybenull_ _Post_writable_byte_size_(dwSize) LPVOID WINAPI VIRTUALALLOCEX(
@@ -129,4 +129,4 @@ constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 #else
     return reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
 #endif
-};
+}
