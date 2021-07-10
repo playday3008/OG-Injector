@@ -9,7 +9,7 @@
 using namespace std;
 
 // Process name
-#define PROCESS L"IEMonitor.exe"
+#define PROCESS L"csgo.exe"
 
 //#define OSIRIS
 //#define GOESP
@@ -77,7 +77,7 @@ int ErrorExit(const wstring& lpszFunction)
             termcolor::reset <<
             endl;
 
-        LocalFree(lpMsgBuf);
+        pLocalFree(lpMsgBuf);
     }
 
     _wsystem(xorstr_(L"pause"));
@@ -85,65 +85,70 @@ int ErrorExit(const wstring& lpszFunction)
     exit(dw);
 }
 
-inline int bypass(const DWORD dwProcess)
+typedef struct {
+    PBYTE baseAddress;
+    HMODULE(WINAPI* loadLibraryA)(PCSTR);
+    FARPROC(WINAPI* getProcAddress)(HMODULE, PCSTR);
+    void(WINAPI* rtlZeroMemory)(void*, size_t);
+
+    DWORD imageBase;
+    DWORD relocVirtualAddress;
+    DWORD importVirtualAddress;
+    DWORD addressOfEntryPoint;
+} LoaderData;
+
+DWORD WINAPI RemoteLibraryLoader(LoaderData* loaderData)
 {
-    // Restore original NtOpenFile from external process
-    //credits: Daniel Krupiñski(pozdro dla ciebie byczku <3)
-    auto csgoProcessHandle = pOpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, dwProcess);
-    if (!csgoProcessHandle) {
-        wcout <<
-            termcolor::red <<
-            xorstr_(L"Can't open csgo.exe to bypass LoadLibrary injection") <<
-            termcolor::reset <<
-            endl;
-        return ErrorExit(xorstr_(L"OpenProcess()"));
+    auto relocation = reinterpret_cast<PIMAGE_BASE_RELOCATION>(loaderData->baseAddress + loaderData->relocVirtualAddress);
+    const auto delta = reinterpret_cast<DWORD>(loaderData->baseAddress - loaderData->imageBase);
+    while (relocation->VirtualAddress) {
+        const auto relocationInfo = reinterpret_cast<PWORD>(relocation + 1);
+        for (DWORD i = 0, count = (relocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD); i < count; i++)
+            if (relocationInfo[i] >> 12 == IMAGE_REL_BASED_HIGHLOW)
+                *reinterpret_cast<PDWORD>(loaderData->baseAddress + (relocation->VirtualAddress + (relocationInfo[i] & 0xFFF))) += delta;
+
+        relocation = reinterpret_cast<PIMAGE_BASE_RELOCATION>(reinterpret_cast<LPBYTE>(relocation) + relocation->SizeOfBlock);
     }
-    auto ntdll = pLoadLibraryW(xorstr_(L"ntdll"));
-    if (!ntdll) {
-        wcout <<
-            termcolor::red <<
-            xorstr_(L"Can't load ntdll.dll module") <<
-            termcolor::reset <<
-            endl;
-        return ErrorExit(xorstr_(L"LoadLibraryW()"));
+    
+    auto importDirectory = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(loaderData->baseAddress + loaderData->importVirtualAddress);
+
+    while (importDirectory->Characteristics) {
+        auto originalFirstThunk = reinterpret_cast<PIMAGE_THUNK_DATA>(loaderData->baseAddress + importDirectory->OriginalFirstThunk);
+        auto firstThunk = reinterpret_cast<PIMAGE_THUNK_DATA>(loaderData->baseAddress + importDirectory->FirstThunk);
+
+        HMODULE module = loaderData->loadLibraryA(reinterpret_cast<LPCSTR>(loaderData->baseAddress) + importDirectory->Name);
+
+        if (!module)
+            return FALSE;
+
+        while (originalFirstThunk->u1.AddressOfData) {
+            const auto Function = reinterpret_cast<DWORD>(loaderData->getProcAddress(module, originalFirstThunk->u1.Ordinal & IMAGE_ORDINAL_FLAG
+                ? reinterpret_cast<LPCSTR>(originalFirstThunk->u1.Ordinal & 0xFFFF)
+                : reinterpret_cast<PIMAGE_IMPORT_BY_NAME>(loaderData->baseAddress + originalFirstThunk->u1.AddressOfData)->Name
+            ));
+
+            if (!Function)
+                return FALSE;
+
+            firstThunk->u1.Function = Function;
+            originalFirstThunk++;
+            firstThunk++;
+        }
+        importDirectory++;
     }
 
-    if (auto ntOpenFile = pGetProcAddress(ntdll, xorstr_("NtOpenFile"));
-        ntOpenFile) {
-        array<char, 5> originalBytes{};
-        if (memcpy_s(originalBytes.data(), originalBytes.size(), ntOpenFile, 5)) {
-            wcout <<
-                termcolor::red <<
-                xorstr_(L"Can't copy original NtOpenFile bytes to buffer") <<
-                termcolor::reset <<
-                endl;
-            return ErrorExit(xorstr_(L"memcpy_s()"));
-        }
-        if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), 5, nullptr)) {
-            wcout <<
-                termcolor::red <<
-                xorstr_(L"Can't write original NtOpenFile bytes to csgo.exe") <<
-                termcolor::reset <<
-                endl;
-            return ErrorExit(xorstr_(L"WriteProcessMemory()"));
-        }
-        if (!pCloseHandle(csgoProcessHandle)) {
-            wcout <<
-                termcolor::red <<
-                xorstr_(L"Can't close csgo.exe bypass handle") <<
-                termcolor::reset <<
-                endl;
-            return ErrorExit(xorstr_(L"CloseHandle()"));
-        }
-        return EXIT_SUCCESS;
+    if (loaderData->addressOfEntryPoint) {
+        const auto result = reinterpret_cast<DWORD(__stdcall*)(HMODULE, DWORD, LPVOID)>(loaderData->baseAddress + loaderData->addressOfEntryPoint)
+            (reinterpret_cast<HMODULE>(loaderData->baseAddress), DLL_PROCESS_ATTACH, nullptr);
+
+        loaderData->rtlZeroMemory(loaderData->baseAddress + loaderData->addressOfEntryPoint, 32);
+
+        return result;
     }
-    wcout <<
-        termcolor::red <<
-        xorstr_(L"Can't get NtOpenFile from ntdll.dll") <<
-        termcolor::reset <<
-        endl;
-    return ErrorExit(xorstr_(L"GetProcAddress()"));
+    return TRUE;
 }
+
+void stub() {}
 
 //   ____    ___                      ____
 //  /\  _`\ /\_ \                    /\  _`\
@@ -200,21 +205,37 @@ int wmain()
     if (!kernel32)
         return EXIT_FAILURE;
 
+    auto ntdll = pGetModuleHandleW(xorstr_(L"ntdll"));
+    if (!ntdll)
+        return EXIT_FAILURE;
+
     try
     {
-        pLoadLibraryW = DynamicLoad<LPLOADLIBRARYW>(kernel32, xorstr_("LoadLibraryW"));
+        pLoadLibraryA = DynamicLoad<LPLOADLIBRARYA>(kernel32, xorstr_("LoadLibraryA"));
         pGetLastError = DynamicLoad<LPGETLASTERROR>(kernel32, xorstr_("GetLastError"));
+        pSetLastError = DynamicLoad<LPSETLASTERROR>(kernel32, xorstr_("SetLastError"));
         pFormatMessageW = DynamicLoad<LPFORMATMESSAGEW>(kernel32, xorstr_("FormatMessageW"));
+        pRtlZeroMemory = DynamicLoad<LPRTLZEROMEMORY>(kernel32, xorstr_("RtlZeroMemory"));
 
         pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, xorstr_("OpenProcess"));
         pCloseHandle = DynamicLoad<LPCLOSEHANDLE>(kernel32, xorstr_("CloseHandle"));
+        pVirtualAlloc = DynamicLoad<LPVIRTUALALLOC>(kernel32, xorstr_("VirtualAlloc"));
         pVirtualAllocEx = DynamicLoad<LPVIRTUALALLOCEX>(kernel32, xorstr_("VirtualAllocEx"));
+        pVirtualFreeEx = DynamicLoad<LPVIRTUALFREEEX>(kernel32, xorstr_("VirtualFreeEx"));
         pWriteProcessMemory = DynamicLoad<LPWRITEPROCESSMEMORY>(kernel32, xorstr_("WriteProcessMemory"));
-        pCreateRemoteThread = DynamicLoad<LPCREATEREMOTETHREAD>(kernel32, xorstr_("CreateRemoteThread"));
+        pWaitForSingleObject = DynamicLoad<LPWAITFORSINGLEOBJECT>(kernel32, xorstr_("WaitForSingleObject"));
 
         pCreateToolhelp32Snapshot = DynamicLoad<LPCREATETOOLHELP32SNAPSHOT>(kernel32, xorstr_("CreateToolhelp32Snapshot"));
         pProcess32FirstW = DynamicLoad<LPPROCESS32FIRSTW>(kernel32, xorstr_("Process32FirstW"));
         pProcess32NextW = DynamicLoad<LPPROCESS32NEXTW>(kernel32, xorstr_("Process32NextW"));
+        
+        pCreateFileW = DynamicLoad<LPCREATEFILEW>(kernel32, xorstr_("CreateFileW"));
+        pGetFileSize = DynamicLoad<LPGETFILESIZE>(kernel32, xorstr_("GetFileSize"));
+        pReadFile = DynamicLoad<LPREADFILE>(kernel32, xorstr_("ReadFile"));
+        pLocalFree = DynamicLoad<LPLOCALFREE>(kernel32, xorstr_("LocalFree"));
+        
+        pRtlCreateUserThread = DynamicLoad<LPRTLCREATEUSERTHREAD>(ntdll, xorstr_("RtlCreateUserThread"));
+        pRtlNtStatusToDosError = DynamicLoad<LPRTLNTSTATUSTODOSERROR>(ntdll, xorstr_("RtlNtStatusToDosError"));
     }
     catch (const std::runtime_error& e)
     {
@@ -359,11 +380,6 @@ int wmain()
 
     #pragma endregion
 
-    // Bypass LoadLibrary injection for csgo
-    if constexpr (!wstring_view(PROCESS).compare(L"csgo.exe"))
-      if (bypass(processId) != EXIT_SUCCESS)
-         return EXIT_FAILURE;
-
     #pragma region Injection code
 
     const wstring dllPath = filesystem::absolute(dllname);
@@ -383,8 +399,56 @@ int wmain()
         processName <<
         termcolor::reset <<
         endl;
+    
+    auto* hFile = pCreateFileW(dll.data(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL , nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't open ") <<
+            termcolor::bright_red <<
+            dll.data() <<
+            termcolor::reset <<
+            termcolor::red <<
+            xorstr_(L" to read") <<
+            termcolor::reset <<
+            endl;
+        return ErrorExit(xorstr_(L"CreateFileW()"));
+    }
+    const auto FileSize = pGetFileSize(hFile, nullptr);
+    if (FileSize == INVALID_FILE_SIZE) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Invalid size of ") <<
+            termcolor::bright_red <<
+            dll.data() <<
+            termcolor::reset <<
+            endl;
+        return ErrorExit(xorstr_(L"GetFileSize()"));
+    }
+    auto FileBuffer = pVirtualAlloc(nullptr, FileSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!FileBuffer) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't allocate memory for ") <<
+            termcolor::bright_red <<
+            dll.data() <<
+            termcolor::reset <<
+            endl;
+        return ErrorExit(xorstr_(L"VirtualAlloc()"));
+    }
+    if (!pReadFile(hFile, FileBuffer, FileSize, nullptr, nullptr)) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't read ") <<
+            termcolor::bright_red <<
+            dll.data() <<
+            termcolor::reset <<
+            endl;
+        return ErrorExit(xorstr_(L"ReadFile()"));
+    }
 
-    auto* hProcess = pOpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, processId);
+    auto ntHeaders = reinterpret_cast<PIMAGE_NT_HEADERS>(static_cast<LPBYTE>(FileBuffer) + static_cast<PIMAGE_DOS_HEADER>(FileBuffer)->e_lfanew);
+    auto* hProcess = pOpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
     if (!hProcess) {
         wcout << 
             termcolor::red << 
@@ -398,8 +462,8 @@ int wmain()
             endl;
         return ErrorExit(xorstr_(L"OpenProcess()"));
     }
-    auto* allocatedMem = pVirtualAllocEx(hProcess, nullptr, dll.size(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    if (!allocatedMem) {
+    auto* executableImage = static_cast<PBYTE>(pVirtualAllocEx(hProcess, nullptr, ntHeaders->OptionalHeader.SizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+    if (!executableImage) {
         wcout << 
             termcolor::red << 
             xorstr_(L"Can't allocate memory in ") << 
@@ -409,26 +473,98 @@ int wmain()
             endl;
         return ErrorExit(xorstr_(L"VirtualAllocEx()"));
     }
-    if (!pWriteProcessMemory(hProcess, allocatedMem, dll.data(), dll.size(), nullptr)) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't write dll path to ") << 
+    //if (!pWriteProcessMemory(hProcess, executableImage, FileBuffer, ntHeaders->OptionalHeader.SizeOfHeaders, nullptr)) {
+    //    wcout <<
+    //        termcolor::red <<
+    //        xorstr_(L"Can't write injection data into ") <<
+    //        termcolor::bright_red <<
+    //        processName <<
+    //        termcolor::reset <<
+    //        endl;
+    //    return ErrorExit(xorstr_(L"WriteProcessMemory()"));
+    //}
+    const auto sectionHeaders = reinterpret_cast<PIMAGE_SECTION_HEADER>(ntHeaders + 1);
+    for (WORD i = 0; i < ntHeaders->FileHeader.NumberOfSections; i++)
+        if (!pWriteProcessMemory(hProcess, executableImage + sectionHeaders[i].VirtualAddress, static_cast<LPBYTE>(FileBuffer) + sectionHeaders[i].PointerToRawData, sectionHeaders[i].SizeOfRawData, nullptr)) {
+            wcout <<
+                termcolor::red <<
+                xorstr_(L"Can't write dll into ") <<
+                termcolor::bright_red <<
+                processName <<
+                termcolor::reset <<
+                termcolor::bright_red <<
+                xorstr_(L" (part ") << i << xorstr_(L" of ") << ntHeaders->FileHeader.NumberOfSections << xorstr_(L")") <<
+                termcolor::reset <<
+                endl;
+            return ErrorExit(xorstr_(L"WriteProcessMemory()"));
+        }
+    auto loaderMemory = static_cast<LoaderData*>(pVirtualAllocEx(hProcess, nullptr, 4096, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READ));
+    if (!loaderMemory) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't allocate memory for injection code in ") <<
+            termcolor::reset <<
             termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
+            processName <<
+            termcolor::reset <<
+            endl;
+        return ErrorExit(xorstr_(L"VirtualAllocEx()"));
+    }
+
+    LoaderData loaderParams{
+        executableImage,
+        pLoadLibraryA,
+        pGetProcAddress,
+        pRtlZeroMemory,
+        ntHeaders->OptionalHeader.ImageBase,
+        ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress,
+        ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress,
+        ntHeaders->OptionalHeader.AddressOfEntryPoint
+    };
+    
+    if (!pWriteProcessMemory(hProcess, loaderMemory, &loaderParams, sizeof(LoaderData), nullptr)) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't write injection data into ") <<
+            termcolor::bright_red <<
+            processName <<
+            termcolor::reset <<
             endl;
         return ErrorExit(xorstr_(L"WriteProcessMemory()"));
     }
-    auto* thread = pCreateRemoteThread(hProcess, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryW), allocatedMem, 0, nullptr);
-    if (!thread) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't create remote thread with LoadLibrary module in ") << 
+    if (!pWriteProcessMemory(hProcess, loaderMemory + 1, RemoteLibraryLoader, reinterpret_cast<DWORD>(stub) - reinterpret_cast<DWORD>(RemoteLibraryLoader), nullptr)) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't write injection data into ") <<
             termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
+            processName <<
+            termcolor::reset <<
             endl;
-        return ErrorExit(xorstr_(L"CreateRemoteThread()"));
+        return ErrorExit(xorstr_(L"WriteProcessMemory()"));
+    }
+    auto* thread = INVALID_HANDLE_VALUE;
+    auto status = pRtlCreateUserThread(hProcess, nullptr, 0, 0, 0, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(loaderMemory + 1), loaderMemory, &thread, nullptr);
+    if (!(status >= 0)) {
+        pSetLastError(pRtlNtStatusToDosError(status));
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't create remote thread with injection function in ") <<
+            termcolor::bright_red <<
+            processName <<
+            termcolor::reset <<
+            endl;
+        return ErrorExit(xorstr_(L"RtlCreateUserThread()"));
+    }
+    pWaitForSingleObject(thread, INFINITE);
+    if (!pVirtualFreeEx(hProcess, loaderMemory, 0, MEM_RELEASE)) {
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't free virtual memory after injection in ") <<
+            termcolor::bright_red <<
+            processName <<
+            termcolor::reset <<
+            endl;
+        return ErrorExit(xorstr_(L"VirtualFreeEx()"));
     }
     if (!pCloseHandle(hProcess)) {
         wcout << 
