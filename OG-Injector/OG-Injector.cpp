@@ -1,8 +1,12 @@
 ﻿#include "OG-Injector.hpp"
 
+#if (defined(OSIRIS) || defined(GOESP))
 #include <array>
+#endif
 #include <filesystem>
 #include <thread>
+
+using namespace std;
 
 // Process name
 #define PROCESS L"IEMonitor.exe"
