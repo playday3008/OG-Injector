@@ -48,6 +48,11 @@ typedef _Success_(return != 0) DWORD WINAPI FORMATMESSAGEW(
 ); // FormatMessageW
 typedef FORMATMESSAGEW FAR* LPFORMATMESSAGEW;
 
+typedef _Success_(return == 0) _Ret_maybenull_ HLOCAL WINAPI LOCALFREE(
+    _Frees_ptr_opt_ HLOCAL hMem
+); // LocalFree
+typedef LOCALFREE FAR* LPLOCALFREE;
+
 typedef _Check_return_ _Post_equals_last_error_ HANDLE WINAPI OPENPROCESS(
     _In_    DWORD   dwDesiredAccess,
     _In_    BOOL    bInheritHandle,
@@ -112,6 +117,7 @@ inline LPGETMODULEHANDLEW pGetModuleHandleW;
 inline LPLOADLIBRARYW pLoadLibraryW;
 inline LPGETLASTERROR pGetLastError;
 inline LPFORMATMESSAGEW pFormatMessageW;
+inline LPLOCALFREE pLocalFree;
 inline LPOPENPROCESS pOpenProcess;
 inline LPCLOSEHANDLE pCloseHandle;
 inline LPVIRTUALALLOCEX pVirtualAllocEx;

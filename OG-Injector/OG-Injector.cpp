@@ -9,7 +9,7 @@
 using namespace std;
 
 // Process name
-#define PROCESS L"IEMonitor.exe"
+#define PROCESS L"csgo.exe"
 
 //#define OSIRIS
 //#define GOESP
@@ -98,7 +98,7 @@ int ErrorExit(const wstring& lpszFunction)
             endl;
         JUNK;
 
-        LocalFree(lpMsgBuf);
+        pLocalFree(lpMsgBuf);
         JUNK;
     }
     JUNK;
@@ -262,6 +262,8 @@ int wmain()
         pGetLastError = DynamicLoad<LPGETLASTERROR>(kernel32, xorstr_("GetLastError"));
         JUNK;
         pFormatMessageW = DynamicLoad<LPFORMATMESSAGEW>(kernel32, xorstr_("FormatMessageW"));
+        JUNK;
+        pLocalFree = DynamicLoad<LPLOCALFREE>(kernel32, xorstr_("LocalFree"));
         JUNK;
 
         pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, xorstr_("OpenProcess"));
