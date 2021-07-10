@@ -8,8 +8,6 @@
 #include "xorstr.hpp"
 #include "termcolor.hpp"
 
-using namespace std;
-
 typedef FARPROC WINAPI GETPROCADDRESS(
     _In_    HMODULE hModule,
     _In_    LPCSTR  lpProcName
@@ -119,12 +117,12 @@ template <typename LPtypedef>
 constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 {
 #ifdef _DEBUG
-    cout << xorstr_("Loading function '") << termcolor::green << Func << termcolor::reset << xorstr_("' from module '") << termcolor::yellow << xorstr_("0x") << Module << termcolor::reset << xorstr_("'") << endl;
+    std::cout << xorstr_("Loading function '") << termcolor::green << Func << termcolor::reset << xorstr_("' from module '") << termcolor::yellow << xorstr_("0x") << Module << termcolor::reset << xorstr_("'") << std::endl;
     auto _ = reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
     if (_)
-        cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << _ << termcolor::reset << xorstr_("'") << endl;
+        std::cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << _ << termcolor::reset << xorstr_("'") << std::endl;
     else
-        cout << xorstr_("Failed to load function") << endl;
+        std::cout << xorstr_("Failed to load function") << std::endl;
     return _;
 #else
     return reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
