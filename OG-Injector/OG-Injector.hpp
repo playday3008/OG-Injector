@@ -124,18 +124,21 @@ inline LPPROCESS32NEXTW pProcess32NextW;
 template <typename LPtypedef>
 constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 {
+    JUNK;
 #ifdef _DEBUG
     std::cout << xorstr_("Loading function '") << termcolor::green << Func << termcolor::reset << xorstr_("' from module '") << termcolor::yellow << xorstr_("0x") << Module << termcolor::reset << xorstr_("'") << std::endl;
     JUNK;
-    auto _ = reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
-    JUNK;
-    if (_)
-        std::cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << _ << termcolor::reset << xorstr_("'") << std::endl;
-    else
-        std::cout << xorstr_("Failed to load function") << std::endl;
-    return _;
-#else
-    JUNK;
-    return reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
 #endif
+    auto pModule = reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
+    JUNK;
+    if (!pModule)
+#ifdef _DEBUG
+        std::cout << xorstr_("Failed to load function") << std::endl;
+    else
+        std::cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << pModule << termcolor::reset << xorstr_("'") << std::endl;
+#else
+        throw std::runtime_error(Func);
+#endif
+    JUNK;
+    return pModule;
 }

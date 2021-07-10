@@ -252,31 +252,51 @@ int wmain()
     JUNK;
     if (!kernel32)
         return EXIT_FAILURE;
+        
+    JUNK;
+    try
+    {
+        JUNK;
+        pLoadLibraryW = DynamicLoad<LPLOADLIBRARYW>(kernel32, xorstr_("LoadLibraryW"));
+        JUNK;
+        pGetLastError = DynamicLoad<LPGETLASTERROR>(kernel32, xorstr_("GetLastError"));
+        JUNK;
+        pFormatMessageW = DynamicLoad<LPFORMATMESSAGEW>(kernel32, xorstr_("FormatMessageW"));
+        JUNK;
 
-    JUNK;
-    pLoadLibraryW = DynamicLoad<LPLOADLIBRARYW>(kernel32, xorstr_("LoadLibraryW"));
-    JUNK;
-    pGetLastError = DynamicLoad<LPGETLASTERROR>(kernel32, xorstr_("GetLastError"));
-    JUNK;
-    pFormatMessageW = DynamicLoad<LPFORMATMESSAGEW>(kernel32, xorstr_("FormatMessageW"));
-    JUNK;
+        pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, xorstr_("OpenProcess"));
+        JUNK;
+        pCloseHandle = DynamicLoad<LPCLOSEHANDLE>(kernel32, xorstr_("CloseHandle"));
+        JUNK;
+        pVirtualAllocEx = DynamicLoad<LPVIRTUALALLOCEX>(kernel32, xorstr_("VirtualAllocEx"));
+        JUNK;
+        pWriteProcessMemory = DynamicLoad<LPWRITEPROCESSMEMORY>(kernel32, xorstr_("WriteProcessMemory"));
+        JUNK;
+        pCreateRemoteThread = DynamicLoad<LPCREATEREMOTETHREAD>(kernel32, xorstr_("CreateRemoteThread"));
+        JUNK;
 
-    pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, xorstr_("OpenProcess"));
-    JUNK;
-    pCloseHandle = DynamicLoad<LPCLOSEHANDLE>(kernel32, xorstr_("CloseHandle"));
-    JUNK;
-    pVirtualAllocEx = DynamicLoad<LPVIRTUALALLOCEX>(kernel32, xorstr_("VirtualAllocEx"));
-    JUNK;
-    pWriteProcessMemory = DynamicLoad<LPWRITEPROCESSMEMORY>(kernel32, xorstr_("WriteProcessMemory"));
-    JUNK;
-    pCreateRemoteThread = DynamicLoad<LPCREATEREMOTETHREAD>(kernel32, xorstr_("CreateRemoteThread"));
-    JUNK;
-
-    pCreateToolhelp32Snapshot = DynamicLoad<LPCREATETOOLHELP32SNAPSHOT>(kernel32, xorstr_("CreateToolhelp32Snapshot"));
-    JUNK;
-    pProcess32FirstW = DynamicLoad<LPPROCESS32FIRSTW>(kernel32, xorstr_("Process32FirstW"));
-    JUNK;
-    pProcess32NextW = DynamicLoad<LPPROCESS32NEXTW>(kernel32, xorstr_("Process32NextW"));
+        pCreateToolhelp32Snapshot = DynamicLoad<LPCREATETOOLHELP32SNAPSHOT>(kernel32, xorstr_("CreateToolhelp32Snapshot"));
+        JUNK;
+        pProcess32FirstW = DynamicLoad<LPPROCESS32FIRSTW>(kernel32, xorstr_("Process32FirstW"));
+        JUNK;
+        pProcess32NextW = DynamicLoad<LPPROCESS32NEXTW>(kernel32, xorstr_("Process32NextW"));
+        JUNK;
+    }
+    catch (const std::runtime_error& e)
+    {
+        JUNK;
+        wcout <<
+            termcolor::red <<
+            xorstr_(L"Can't load '") <<
+            termcolor::yellow <<
+            e.what() <<
+            termcolor::red <<
+            xorstr_(L"' function to correct dll injection into process") <<
+            termcolor::reset <<
+            endl;
+        JUNK;
+        return ErrorExit(xorstr_(L"DynamicLoad<>()"));
+    }
     JUNK;
 
     if (!pGetProcAddress            || !pGetModuleHandleW   ||
