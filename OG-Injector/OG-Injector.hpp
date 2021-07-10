@@ -51,6 +51,11 @@ typedef void WINAPI RTLZEROMEMORY(
 ); // RtlZeroMemory
 typedef RTLZEROMEMORY FAR* LPRTLZEROMEMORY;
 
+typedef _Success_(return == 0) _Ret_maybenull_ HLOCAL WINAPI LOCALFREE(
+    _Frees_ptr_opt_ HLOCAL hMem
+); // LocalFree
+typedef LOCALFREE FAR* LPLOCALFREE;
+
 typedef _Check_return_ _Post_equals_last_error_ HANDLE WINAPI OPENPROCESS(
     _In_    DWORD   dwDesiredAccess,
     _In_    BOOL    bInheritHandle,
@@ -196,6 +201,7 @@ inline LPGETLASTERROR pGetLastError;
 inline LPSETLASTERROR pSetLastError;
 inline LPFORMATMESSAGEW pFormatMessageW;
 inline LPRTLZEROMEMORY pRtlZeroMemory;
+inline LPLOCALFREE pLocalFree;
 inline LPOPENPROCESS pOpenProcess;
 inline LPCLOSEHANDLE pCloseHandle;
 inline LPVIRTUALALLOC pVirtualAlloc;

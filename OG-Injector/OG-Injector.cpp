@@ -216,6 +216,7 @@ int wmain()
         pSetLastError = DynamicLoad<LPSETLASTERROR>(kernel32, xorstr_("SetLastError"));
         pFormatMessageW = DynamicLoad<LPFORMATMESSAGEW>(kernel32, xorstr_("FormatMessageW"));
         pRtlZeroMemory = DynamicLoad<LPRTLZEROMEMORY>(kernel32, xorstr_("RtlZeroMemory"));
+        pLocalFree = DynamicLoad<LPLOCALFREE>(kernel32, xorstr_("LocalFree"));
 
         pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, xorstr_("OpenProcess"));
         pCloseHandle = DynamicLoad<LPCLOSEHANDLE>(kernel32, xorstr_("CloseHandle"));
