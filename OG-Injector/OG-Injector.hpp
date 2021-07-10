@@ -189,11 +189,6 @@ typedef _Must_inspect_result_ BOOL WINAPI READFILE(
 ); // ReadFile
 typedef READFILE FAR* LPREADFILE;
 
-typedef _Success_(return == 0) _Ret_maybenull_ HLOCAL WINAPI LOCALFREE(
-    _Frees_ptr_opt_ HLOCAL hMem
-); // LocalFree
-typedef LOCALFREE FAR* LPLOCALFREE;
-
 inline LPGETPROCADDRESS pGetProcAddress;
 inline LPGETMODULEHANDLEW pGetModuleHandleW;
 inline LPLOADLIBRARYA pLoadLibraryA;
@@ -217,7 +212,6 @@ inline LPPROCESS32NEXTW pProcess32NextW;
 inline LPCREATEFILEW pCreateFileW;
 inline LPGETFILESIZE pGetFileSize;
 inline LPREADFILE pReadFile;
-inline LPLOCALFREE pLocalFree;
 
 template <typename LPtypedef>
 constexpr auto DynamicLoad(HMODULE Module, const char* Func)

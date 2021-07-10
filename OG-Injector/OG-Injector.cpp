@@ -233,7 +233,6 @@ int wmain()
         pCreateFileW = DynamicLoad<LPCREATEFILEW>(kernel32, xorstr_("CreateFileW"));
         pGetFileSize = DynamicLoad<LPGETFILESIZE>(kernel32, xorstr_("GetFileSize"));
         pReadFile = DynamicLoad<LPREADFILE>(kernel32, xorstr_("ReadFile"));
-        pLocalFree = DynamicLoad<LPLOCALFREE>(kernel32, xorstr_("LocalFree"));
         
         pRtlCreateUserThread = DynamicLoad<LPRTLCREATEUSERTHREAD>(ntdll, xorstr_("RtlCreateUserThread"));
         pRtlNtStatusToDosError = DynamicLoad<LPRTLNTSTATUSTODOSERROR>(ntdll, xorstr_("RtlNtStatusToDosError"));
