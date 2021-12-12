@@ -19,11 +19,6 @@ typedef _When_(lpModuleName == NULL, _Ret_notnull_) _When_(lpModuleName != NULL,
 ); // GetModuleHandleW
 typedef GETMODULEHANDLEW FAR* LPGETMODULEHANDLEW;
 
-typedef _Ret_maybenull_ HMODULE WINAPI LOADLIBRARYW(
-    _In_    LPCWSTR lpLibFileName
-); // LoadLibraryW
-typedef LOADLIBRARYW FAR* LPLOADLIBRARYW;
-
 typedef _Check_return_ _Post_equals_last_error_ DWORD WINAPI GETLASTERROR(); // GetLastError
 typedef GETLASTERROR FAR* LPGETLASTERROR;
 
@@ -44,6 +39,11 @@ typedef _Success_(return == 0) _Ret_maybenull_ HLOCAL WINAPI LOCALFREE(
     _Frees_ptr_opt_ HLOCAL hMem
 ); // LocalFree
 typedef LOCALFREE FAR* LPLOCALFREE;
+
+typedef _Ret_maybenull_ HMODULE WINAPI LOADLIBRARYW(
+    _In_    LPCWSTR lpLibFileName
+); // LoadLibraryW
+typedef LOADLIBRARYW FAR* LPLOADLIBRARYW;
 
 typedef _Check_return_ _Post_equals_last_error_ HANDLE WINAPI OPENPROCESS(
     _In_    DWORD   dwDesiredAccess,
@@ -104,12 +104,21 @@ typedef BOOL WINAPI PROCESS32NEXTW(
 ); // Process32NextW
 typedef PROCESS32NEXTW FAR* LPPROCESS32NEXTW;
 
+#ifdef _DEBUG
+typedef DWORD WINAPI GETMODULEFILENAMEA(
+    _In_opt_                                                            HMODULE hModule,
+    _Out_writes_to_(nSize, ((return < nSize) ? (return +1) : nSize))    LPSTR lpFilename,
+    _In_                                                                DWORD nSize
+); // GetModuleFileNameA
+typedef GETMODULEFILENAMEA FAR* LPGETMODULEFILENAMEA;
+#endif
+
 inline LPGETPROCADDRESS pGetProcAddress;
 inline LPGETMODULEHANDLEW pGetModuleHandleW;
-inline LPLOADLIBRARYW pLoadLibraryW;
 inline LPGETLASTERROR pGetLastError;
 inline LPFORMATMESSAGEW pFormatMessageW;
 inline LPLOCALFREE pLocalFree;
+inline LPLOADLIBRARYW pLoadLibraryW;
 inline LPOPENPROCESS pOpenProcess;
 inline LPCLOSEHANDLE pCloseHandle;
 inline LPVIRTUALALLOCEX pVirtualAllocEx;
@@ -118,19 +127,34 @@ inline LPCREATEREMOTETHREAD pCreateRemoteThread;
 inline LPCREATETOOLHELP32SNAPSHOT pCreateToolhelp32Snapshot;
 inline LPPROCESS32FIRSTW pProcess32FirstW;
 inline LPPROCESS32NEXTW pProcess32NextW;
+#ifdef _DEBUG
+inline LPGETMODULEFILENAMEA pGetModuleFileNameA;
+#endif
 
 template <typename LPtypedef>
 constexpr auto DynamicLoad(HMODULE Module, const char* Func)
 {
 #ifdef _DEBUG
-    std::cout << xorstr_("Loading function '") << termcolor::green << Func << termcolor::reset << xorstr_("' from module '") << termcolor::yellow << xorstr_("0x") << Module << termcolor::reset << xorstr_("'") << std::endl;
+#define x xorstr_
+    using namespace std;
+    using namespace termcolor;
+    if (pGetModuleFileNameA) {
+        char* modulePath = new char[MAX_PATH];
+        pGetModuleFileNameA(Module, modulePath, MAX_PATH);
+        cout << x("Loading function '") << green << Func << reset << x("' from module '") << yellow << modulePath << reset << x("'") << x(" (0x") << hex << Module << x(")") << endl;
+        delete[] modulePath;
+    }
+    else
+        cout << x("Loading function '") << green << Func << reset << x("' from module '") << yellow << x("0x") << Module << reset << x("'") << endl;
 #endif
+
     auto pModule = reinterpret_cast<LPtypedef>(pGetProcAddress(Module, Func));
     if (!pModule)
 #ifdef _DEBUG
-        std::cout << xorstr_("Failed to load function") << std::endl;
+        cout << red << x("Failed to load function: ") << bright_red << Func << reset << endl;
     else
-        std::cout << xorstr_("Function loaded with address '") << termcolor::bright_cyan << xorstr_("0x") << pModule << termcolor::reset << xorstr_("'") << std::endl;
+        cout << x("Function loaded with address: ") << bright_cyan << x("0x") << pModule << reset << endl;
+#undef x
 #else
         throw std::runtime_error(Func);
 #endif

@@ -1,148 +1,258 @@
 ﻿#include "OG-Injector.hpp"
 
-#if (defined(OSIRIS) || defined(GOESP))
 #include <array>
-#endif
 #include <filesystem>
+#include <fstream>
 #include <thread>
 
-using namespace std;
-
-// Process name
-#define PROCESS L"csgo.exe"
-
-//#define OSIRIS
-//#define GOESP
-//#define BETA
-
-#if (defined(OSIRIS) || defined(GOESP))
 #include <intrin.h>
 
-inline void checkinst(array<bool, 3>& inst)
-{
-    array<int, 4> CPUInfo{};
-    __cpuid(CPUInfo.data(), 0);
-    const auto nIds = CPUInfo.at(0);
-
-    // Detect Features
-    if (nIds >= 0x00000001) {
-        __cpuid(CPUInfo.data(), 0x00000001);
-        inst.at(0) = (CPUInfo.at(3) & 1 << 26) != 0;
-        inst.at(1) = (CPUInfo.at(2) & 1 << 28) != 0;
-    }
-    if (nIds >= 0x00000007) {
-        __cpuid(CPUInfo.data(), 0x00000007);
-        inst.at(2) = (CPUInfo.at(1) & 1 << 5) != 0;
-    }
-}
-#endif
+using namespace std;
+namespace fs = filesystem;
 
 // Retrieve the system error message for the last-error code
 int ErrorExit(const wstring& lpszFunction)
 {
-    if (!pGetLastError)
-        return EXIT_FAILURE;
+    using namespace termcolor;
+#define x xorstr_
 
     const DWORD dw = pGetLastError();
 
     if (!dw)
-        wcout << xorstr_(L"GetLastError() didn't catch anything") << endl;
+        wcout << x(L"GetLastError() didn't catch anything.") << endl;
     else {
-        if (!pFormatMessageW)
-            return EXIT_FAILURE;
-
-        LPWSTR lpMsgBuf;
+        LPWSTR lpMsgBuf = nullptr;
 
         pFormatMessageW(
             FORMAT_MESSAGE_ALLOCATE_BUFFER |
             FORMAT_MESSAGE_FROM_SYSTEM |
             FORMAT_MESSAGE_IGNORE_INSERTS,
-            nullptr,
-            dw,
+            nullptr, dw,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             reinterpret_cast<LPWSTR>(&lpMsgBuf),
             0, nullptr);
 
-        wcout << termcolor::yellow << xorstr_(L"GetLastError()") << termcolor::reset << xorstr_(L" catched error:") << endl <<
-            termcolor::cyan <<
-            lpszFunction <<
-            termcolor::reset <<
-            xorstr_(L" failed with error ") <<
-            termcolor::bright_red <<
-            to_wstring(dw) <<
-            termcolor::reset <<
-            xorstr_(L": ") <<
-            termcolor::bright_yellow <<
-            lpMsgBuf <<
-            termcolor::reset <<
-            endl;
+        wcout << yellow << x(L"GetLastError()") << reset << x(L" catched error:") << endl;
+        wcout << cyan << lpszFunction << reset << x(L" failed with error ") << bright_red << to_wstring(dw) << reset << x(L": ") << bright_yellow << lpMsgBuf << reset << endl;
 
         pLocalFree(lpMsgBuf);
     }
 
-    _wsystem(xorstr_(L"pause"));
-
+    _wsystem(x(L"pause"));
+#undef x
     exit(dw);
 }
 
-inline int bypass(const DWORD dwProcess)
+inline void PrintLogo()
 {
-    // Restore original NtOpenFile from external process
-    //credits: Daniel Krupiñski(pozdro dla ciebie byczku <3)
-    auto csgoProcessHandle = pOpenProcess(PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, dwProcess);
-    if (!csgoProcessHandle) {
-        wcout <<
-            termcolor::red <<
-            xorstr_(L"Can't open csgo.exe to bypass LoadLibrary injection") <<
-            termcolor::reset <<
-            endl;
-        return ErrorExit(xorstr_(L"OpenProcess()"));
-    }
-    auto ntdll = pLoadLibraryW(xorstr_(L"ntdll"));
-    if (!ntdll) {
-        wcout <<
-            termcolor::red <<
-            xorstr_(L"Can't load ntdll.dll module") <<
-            termcolor::reset <<
-            endl;
-        return ErrorExit(xorstr_(L"LoadLibraryW()"));
+    using namespace termcolor;
+    using namespace this_thread;
+    using namespace chrono_literals;
+#define x xorstr_
+    wcout << bright_red     << x(LR"(   ____  ______   ____        _           __)")              << endl; sleep_for(50ms);
+    wcout << bright_green   << x(LR"(  / __ \/ ____/  /  _/___    (_)__  _____/ /_____  _____)")  << endl; sleep_for(50ms);
+    wcout << bright_yellow  << x(LR"( / / / / / __    / // __ \  / / _ \/ ___/ __/ __ \/ ___/)")  << endl; sleep_for(50ms);
+    wcout << bright_blue    << x(LR"(/ /_/ / /_/ /  _/ // / / / / /  __/ /__/ /_/ /_/ / /)")      << endl; sleep_for(50ms);
+    wcout << bright_magenta << x(LR"(\____/\____/  /___/_/ /_/_/ /\___/\___/\__/\____/_/)")       << endl; sleep_for(50ms);
+    wcout << bright_cyan    << x(LR"(    ____  __           /___/)")                              << endl; sleep_for(50ms);
+    wcout << bright_red     << x(LR"(   / __ \/ /___ ___  __/ __ \____ ___  __)")                 << endl; sleep_for(50ms);
+    wcout << bright_green   << x(LR"(  / /_/ / / __ `/ / / / / / / __ `/ / / /)")                 << endl; sleep_for(50ms);
+    wcout << bright_yellow  << x(LR"( / ____/ / /_/ / /_/ / /_/ / /_/ / /_/ /)")                  << endl; sleep_for(50ms);
+    wcout << bright_blue    << x(LR"(/_/   /_/\__,_/\__, /_____/\__,_/\__, /)")                   << endl; sleep_for(50ms);
+    wcout << bright_magenta << x(LR"(              /____/            /____/)")            << endl << endl; sleep_for(50ms);
+    wcout << bright_white   << x(L"Build: " __TIMESTAMP__)                       << reset << endl << endl; sleep_for(50ms);
+#undef x
+}
+
+inline int InitWinAPI()
+{
+#define x xorstr_
+    wcout << x(L"Loading WinAPI functions") << endl;
+
+    pGetProcAddress = GetProcAddress;
+    pGetModuleHandleW = GetModuleHandleW;
+
+    auto kernel32 = pGetModuleHandleW(x(L"kernel32"));
+    if (!kernel32) {
+        wcout << x(L"Yo, WTF, how I didn't find kernel32 module?") << endl;
+        _wsystem(x(L"pause"));
+        return EXIT_FAILURE;
     }
 
-    if (auto ntOpenFile = pGetProcAddress(ntdll, xorstr_("NtOpenFile"));
-        ntOpenFile) {
-        array<char, 5> originalBytes{};
-        if (memcpy_s(originalBytes.data(), originalBytes.size(), ntOpenFile, 5)) {
-            wcout <<
-                termcolor::red <<
-                xorstr_(L"Can't copy original NtOpenFile bytes to buffer") <<
-                termcolor::reset <<
-                endl;
-            return ErrorExit(xorstr_(L"memcpy_s()"));
-        }
-        if (!pWriteProcessMemory(csgoProcessHandle, ntOpenFile, originalBytes.data(), 5, nullptr)) {
-            wcout <<
-                termcolor::red <<
-                xorstr_(L"Can't write original NtOpenFile bytes to csgo.exe") <<
-                termcolor::reset <<
-                endl;
-            return ErrorExit(xorstr_(L"WriteProcessMemory()"));
-        }
-        if (!pCloseHandle(csgoProcessHandle)) {
-            wcout <<
-                termcolor::red <<
-                xorstr_(L"Can't close csgo.exe bypass handle") <<
-                termcolor::reset <<
-                endl;
-            return ErrorExit(xorstr_(L"CloseHandle()"));
-        }
-        return EXIT_SUCCESS;
+    try
+    {
+#ifdef _DEBUG
+        pGetModuleFileNameA = DynamicLoad<LPGETMODULEFILENAMEA>(kernel32, x("GetModuleFileNameA"));
+#endif
+        pGetLastError = DynamicLoad<LPGETLASTERROR>(kernel32, x("GetLastError"));
+        pFormatMessageW = DynamicLoad<LPFORMATMESSAGEW>(kernel32, x("FormatMessageW"));
+        pLocalFree = DynamicLoad<LPLOCALFREE>(kernel32, x("LocalFree"));
+        pLoadLibraryW = DynamicLoad<LPLOADLIBRARYW>(kernel32, x("LoadLibraryW"));
+
+        pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, x("OpenProcess"));
+        pCloseHandle = DynamicLoad<LPCLOSEHANDLE>(kernel32, x("CloseHandle"));
+        pVirtualAllocEx = DynamicLoad<LPVIRTUALALLOCEX>(kernel32, x("VirtualAllocEx"));
+        pWriteProcessMemory = DynamicLoad<LPWRITEPROCESSMEMORY>(kernel32, x("WriteProcessMemory"));
+        pCreateRemoteThread = DynamicLoad<LPCREATEREMOTETHREAD>(kernel32, x("CreateRemoteThread"));
+
+        pCreateToolhelp32Snapshot = DynamicLoad<LPCREATETOOLHELP32SNAPSHOT>(kernel32, x("CreateToolhelp32Snapshot"));
+        pProcess32FirstW = DynamicLoad<LPPROCESS32FIRSTW>(kernel32, x("Process32FirstW"));
+        pProcess32NextW = DynamicLoad<LPPROCESS32NEXTW>(kernel32, x("Process32NextW"));
     }
-    wcout <<
-        termcolor::red <<
-        xorstr_(L"Can't get NtOpenFile from ntdll.dll") <<
-        termcolor::reset <<
-        endl;
-    return ErrorExit(xorstr_(L"GetProcAddress()"));
+    catch (const std::runtime_error& e)
+    {
+        using namespace termcolor;
+        wcout << red << x(L"Can't load '") << bright_red << e.what() << red << x(L"' function for correct dll injection into process") << reset << endl;
+        if (pGetLastError && pFormatMessageW && pLocalFree)
+            return ErrorExit(x(L"DynamicLoad<>()"));
+        else {
+            wcout << x("It's probably impossible to read THIS error message, how did you do that?") << endl;
+            _wsystem(x(L"pause"));
+            return EXIT_FAILURE;
+        }
+    }
+
+    wcout << x(L"WinAPI functions loaded") << endl;
+#undef x
+    return EXIT_SUCCESS;
+}
+
+inline auto GetLibraryName()
+{
+    using namespace termcolor;
+    wstring lName;
+#define x xorstr_
+    do {
+        wcout << x("Provide a library name (ex. blah.dll): ");
+        wcin >> lName;
+
+        wcin.clear();
+        if (!fs::exists(lName)) {
+            wcout << red << x(L"Can't find: ") << bright_red << lName << reset << endl;
+            wcout << yellow << x(L"Try again!") << reset << endl;
+            wcin.clear();
+            lName.clear();
+            continue;
+        }
+        else {
+            auto stream = fstream(lName, ios_base::binary| ios_base::in);
+            if (stream.is_open()) {
+                uint16_t mzHead = 0;
+                uint16_t peOffset = 0;
+                uint16_t peHead = 0;
+
+                stream.read(reinterpret_cast<char*>(&mzHead), sizeof mzHead);
+                stream.seekg(0x3c, stream.beg);
+                stream.read(reinterpret_cast<char*>(&peOffset), sizeof peOffset);
+                stream.seekg(peOffset, stream.beg);
+                stream.read(reinterpret_cast<char*>(&peHead), sizeof peHead);
+                if (mzHead != 0x5a4dUi16 || peHead != 0x00004550Ui16) {
+                    wcout << red << x(L"Invalid DLL file") << reset << endl;
+                    if (mzHead != 0x5a4dUi16)
+                        wcout << red << x(L"P.S. Invalid magic hash") << reset << endl;
+                    else if (peHead != 0x4550Ui16)
+                        wcout << red << x(L"P.S. Invalid PE header") << reset << endl;
+                    wcout << yellow << x(L"Try again!") << reset << endl;
+                    lName.clear();
+                    continue;
+                }
+
+                stream.close();
+            }
+        }
+        break;
+    } while (true);
+
+    wcout << green << x(L"DLL '") << bright_green << lName << reset << green << x(L"' found!") << reset << endl;
+#undef x
+    return lName;
+}
+
+inline auto GetProcessId(DWORD& pID, wstring& pName)
+{
+    using namespace termcolor;
+#define x xorstr_
+    do {
+        wcout << x("Provide a process name (ex. dude.exe): ");
+        wcin >> pName;
+
+        wcout << yellow << x(L"Looking for a ") << bright_red << pName << reset << yellow << x(L" process") << reset << endl;
+
+        PROCESSENTRY32W entry{ sizeof(entry) };
+
+        auto* snapshot = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+        if (!snapshot) {
+            wcout << red << x(L"Failed to create process snapshot: ") << reset << endl;
+            return ErrorExit(x(L"CreateToolhelp32Snapshot()"));
+        }
+        if (pProcess32FirstW(snapshot, &entry)) {
+            do {
+                if (wstring(entry.szExeFile) == pName)
+                    pID = entry.th32ProcessID;
+            } while (pProcess32NextW(snapshot, &entry));
+        }
+
+        if (!pID) {
+            wcout << red << x(L"Couldn't find: ") << bright_red << pName << reset << endl;
+            if (!pCloseHandle(snapshot)) {
+                wcout << red << x(L"Failed to close process snapshot handle") << reset << endl;
+                return ErrorExit(x(L"CloseHandle()"));
+            }
+            wcout << yellow << x(L"Try again!") << reset << endl;
+            wcin.clear();
+            pName.clear();
+            continue;
+        }
+
+        if (!pCloseHandle(snapshot)) {
+            wcout << red << x(L"Failed to close process snapshot handle") << reset << endl;
+            return ErrorExit(x(L"CloseHandle()"));
+        }
+        break;
+    } while (true);
+
+    wcout << green << x(L"Process: ") << bright_green << pName << reset << green << x(L" found with ID: ") << bright_green << dec << pID << reset << endl;
+#undef x
+    return EXIT_SUCCESS;
+}
+
+inline auto InjectLoadLibrary(const wstring& dllname, const wstring& processName, const DWORD processId)
+{
+#define x xorstr_
+    using namespace termcolor;
+
+    const wstring dllPath = fs::absolute(dllname).wstring();
+    vector<wchar_t> dll(MAX_PATH);
+    dllPath.copy(dll.data(), dllPath.size() + 1);
+    dll.at(dllPath.size()) = '\000';
+
+    wcout << yellow << x(L"Injecting ") << bright_yellow << dllname << reset << yellow << x(L" into ") << bright_yellow << processName << reset << endl;
+
+    auto* hProcess = pOpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, processId);
+    if (!hProcess) {
+        wcout << red << x(L"Can't open ") << bright_red << processName << reset << red << x(L" to write") << reset << endl;
+        return ErrorExit(x(L"OpenProcess()"));
+    }
+    auto* allocatedMem = pVirtualAllocEx(hProcess, nullptr, dll.size(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    if (!allocatedMem) {
+        wcout << red << x(L"Can't allocate memory in ") << bright_red << processName << reset << endl;
+        return ErrorExit(x(L"VirtualAllocEx()"));
+    }
+    if (!pWriteProcessMemory(hProcess, allocatedMem, dll.data(), dll.size(), nullptr)) {
+        wcout << red << x(L"Can't write dll path to ") << bright_red << processName << reset << endl;
+        return ErrorExit(x(L"WriteProcessMemory()"));
+    }
+    auto* thread = pCreateRemoteThread(hProcess, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryW), allocatedMem, 0, nullptr);
+    if (!thread) {
+        wcout << red << x(L"Can't create remote thread with LoadLibrary module in ") << bright_red << processName << reset << endl;
+        return ErrorExit(x(L"CreateRemoteThread()"));
+    }
+    if (!pCloseHandle(hProcess)) {
+        wcout << red << x(L"Can't close ") << bright_red << processName << reset << red << x(L"handle") << reset << endl;
+        return ErrorExit(x(L"CloseHandle()"));
+    }
+#undef x
+    return EXIT_SUCCESS;
 }
 
 //   ____    ___                      ____
@@ -157,314 +267,31 @@ inline int bypass(const DWORD dwProcess)
 
 int wmain()
 {
-    #pragma region Logo
+    PrintLogo();
 
-    wcout << termcolor::bright_red << xorstr_(LR"(   ____  ______   ____        _           __)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_green << xorstr_(LR"(  / __ \/ ____/  /  _/___    (_)__  _____/ /_____  _____)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_yellow << xorstr_(LR"( / / / / / __    / // __ \  / / _ \/ ___/ __/ __ \/ ___/)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_blue << xorstr_(LR"(/ /_/ / /_/ /  _/ // / / / / /  __/ /__/ /_/ /_/ / /)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_magenta << xorstr_(LR"(\____/\____/  /___/_/ /_/_/ /\___/\___/\__/\____/_/)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_cyan << xorstr_(LR"(    ____  __           /___/)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_red << xorstr_(LR"(   / __ \/ /___ ___  __/ __ \____ ___  __)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_green << xorstr_(LR"(  / /_/ / / __ `/ / / / / / / __ `/ / / /)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_yellow << xorstr_(LR"( / ____/ / /_/ / /_/ / /_/ / /_/ / /_/ /)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_blue << xorstr_(LR"(/_/   /_/\__,_/\__, /_____/\__,_/\__, /)") << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << termcolor::bright_magenta << xorstr_(LR"(              /____/            /____/)") << endl << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
-    wcout << 
-        termcolor::bright_white <<
-        xorstr_(L"Build: " __TIMESTAMP__) <<
-        termcolor::reset << 
-        endl << endl;
-    this_thread::sleep_for(chrono::milliseconds(50));
+    if (auto ret = InitWinAPI())
+        return ret;
 
-    #pragma endregion
-
-    #pragma region WinAPI
-
-    wcout << xorstr_(L"Loading WinAPI functions") << endl;
-
-    pGetProcAddress = GetProcAddress;
-    pGetModuleHandleW = GetModuleHandleW;
-    auto kernel32 = pGetModuleHandleW(xorstr_(L"kernel32"));
-    if (!kernel32)
-        return EXIT_FAILURE;
-
-    try
-    {
-        pLoadLibraryW = DynamicLoad<LPLOADLIBRARYW>(kernel32, xorstr_("LoadLibraryW"));
-        pGetLastError = DynamicLoad<LPGETLASTERROR>(kernel32, xorstr_("GetLastError"));
-        pFormatMessageW = DynamicLoad<LPFORMATMESSAGEW>(kernel32, xorstr_("FormatMessageW"));
-        pLocalFree = DynamicLoad<LPLOCALFREE>(kernel32, xorstr_("LocalFree"));
-
-        pOpenProcess = DynamicLoad<LPOPENPROCESS>(kernel32, xorstr_("OpenProcess"));
-        pCloseHandle = DynamicLoad<LPCLOSEHANDLE>(kernel32, xorstr_("CloseHandle"));
-        pVirtualAllocEx = DynamicLoad<LPVIRTUALALLOCEX>(kernel32, xorstr_("VirtualAllocEx"));
-        pWriteProcessMemory = DynamicLoad<LPWRITEPROCESSMEMORY>(kernel32, xorstr_("WriteProcessMemory"));
-        pCreateRemoteThread = DynamicLoad<LPCREATEREMOTETHREAD>(kernel32, xorstr_("CreateRemoteThread"));
-
-        pCreateToolhelp32Snapshot = DynamicLoad<LPCREATETOOLHELP32SNAPSHOT>(kernel32, xorstr_("CreateToolhelp32Snapshot"));
-        pProcess32FirstW = DynamicLoad<LPPROCESS32FIRSTW>(kernel32, xorstr_("Process32FirstW"));
-        pProcess32NextW = DynamicLoad<LPPROCESS32NEXTW>(kernel32, xorstr_("Process32NextW"));
-    }
-    catch (const std::runtime_error& e)
-    {
-        wcout <<
-            termcolor::red <<
-            xorstr_(L"Can't load '") <<
-            termcolor::yellow <<
-            e.what() <<
-            termcolor::red <<
-            xorstr_(L"' function to correct dll injection into process") <<
-            termcolor::reset <<
-            endl;
-        return ErrorExit(xorstr_(L"DynamicLoad<>()"));
-    }
-
-    wcout << xorstr_(L"WinAPI functions loaded") << endl;
-
-    #pragma endregion
-
-    #pragma region Osiris and GOESP part
-
-    #ifdef OSIRIS
-    wstring dllname = xorstr_(L"Osiris");
-    #elif defined(GOESP)
-    wstring dllname = xorstr_(L"GOESP");
-    #else
-    const wstring dllname = xorstr_(L"library.dll");
-    #endif
-
-    #if (defined(OSIRIS) || defined(GOESP)) && defined(BETA)
-    dllname += xorstr_(L"_BETA");
-    #endif
-
-    #if (defined(OSIRIS) || defined(GOESP))
-    // Get processor instructions
-    array<bool, 3> inst{};
-    checkinst(inst);
-
-    if (inst.at(2))
-        dllname += xorstr_(L"_AVX2.dll");
-    else if (inst.at(1))
-        dllname += xorstr_(L"_AVX.dll");
-    else if (inst.at(0))
-        dllname += xorstr_(L"_SSE2.dll");
-    #endif
-
-    if (filesystem::exists(dllname))
-        wcout <<
-            termcolor::green <<
-            xorstr_(L"DLL: ") <<
-            termcolor::bright_green <<
-            dllname <<
-            termcolor::reset <<
-            termcolor::green <<
-            xorstr_(L" found") <<
-            termcolor::reset <<
-            endl;
-    else {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't find: ") << 
-            termcolor::bright_red <<
-            dllname << 
-            termcolor::reset << 
-            endl;
-        _wsystem(xorstr_(L"pause"));
-        return EXIT_FAILURE;
-    }
-
-    #pragma endregion
-
-    #pragma region Find process
-
-    const wstring processName = xorstr_(PROCESS);
-    wcout <<
-        termcolor::yellow <<
-        xorstr_(L"Finding ") <<
-        termcolor::bright_red <<
-        processName <<
-        termcolor::reset <<
-        termcolor::yellow <<
-        xorstr_(L" process") <<
-        termcolor::reset <<
-        endl;
+    const wstring dllname = GetLibraryName();
 
     DWORD processId = NULL;
-    PROCESSENTRY32W entry{ sizeof entry };
+    wstring processName;
 
-    auto* snapshot = pCreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-    if (!snapshot) {
-        wcout <<
-            termcolor::red <<
-            xorstr_(L"Can't create process snapshot: ") <<
-            termcolor::reset <<
-            endl;
-        return ErrorExit(xorstr_(L"CreateToolhelp32Snapshot()"));
-    }
-    if (pProcess32FirstW(snapshot, &entry))
-        do {
-            if (wstring(entry.szExeFile) == processName)
-                processId = entry.th32ProcessID;
-        } while (pProcess32NextW(snapshot, &entry));
+    if (auto ret = GetProcessId(processId, processName))
+        return ret;
 
-    if (!processId) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't find: ") << 
-            termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
-            endl;
-        _wsystem(xorstr_(L"pause"));
-        return EXIT_FAILURE;
-    }
+    if (auto ret = InjectLoadLibrary(dllname, processName, processId))
+        return ret;
 
-    if (!pCloseHandle(snapshot)) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't close ") << 
-            termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
-            termcolor::red << 
-            xorstr_(L" finder handle") << 
-            termcolor::reset << 
-            endl;
-        return ErrorExit(xorstr_(L"CloseHandle()"));
-    }
+#define x xorstr_
+    using namespace termcolor;
+    using namespace this_thread;
+    using namespace chrono_literals;
 
-    wcout <<
-        termcolor::green <<
-        xorstr_(L"Process: ") <<
-        termcolor::bright_green <<
-        processName <<
-        termcolor::reset <<
-        termcolor::green <<
-        xorstr_(L" found with PID: ") <<
-        termcolor::bright_green <<
-        dec << processId <<
-        termcolor::reset <<
-        endl;
-
-    #pragma endregion
-
-    // Bypass LoadLibrary injection for csgo
-    if constexpr (!wstring_view(PROCESS).compare(L"csgo.exe"))
-      if (bypass(processId) != EXIT_SUCCESS)
-         return EXIT_FAILURE;
-
-    #pragma region Injection code
-
-    const wstring dllPath = filesystem::absolute(dllname);
-    vector<wchar_t> dll(MAX_PATH);
-    dllPath.copy(dll.data(), dllPath.size() + 1);
-    dll.at(dllPath.size()) = '\0';
-
-    wcout <<
-        termcolor::yellow <<
-        xorstr_(L"Injecting ") <<
-        termcolor::bright_yellow <<
-        dllname <<
-        termcolor::reset <<
-        termcolor::yellow <<
-        xorstr_(L" into ") <<
-        termcolor::bright_yellow <<
-        processName <<
-        termcolor::reset <<
-        endl;
-
-    auto* hProcess = pOpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_VM_OPERATION, FALSE, processId);
-    if (!hProcess) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't open ") << 
-            termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
-            termcolor::red << 
-            xorstr_(L" to write") <<
-            termcolor::reset <<
-            endl;
-        return ErrorExit(xorstr_(L"OpenProcess()"));
-    }
-    auto* allocatedMem = pVirtualAllocEx(hProcess, nullptr, dll.size(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-    if (!allocatedMem) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't allocate memory in ") << 
-            termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
-            endl;
-        return ErrorExit(xorstr_(L"VirtualAllocEx()"));
-    }
-    if (!pWriteProcessMemory(hProcess, allocatedMem, dll.data(), dll.size(), nullptr)) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't write dll path to ") << 
-            termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
-            endl;
-        return ErrorExit(xorstr_(L"WriteProcessMemory()"));
-    }
-    auto* thread = pCreateRemoteThread(hProcess, nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(pLoadLibraryW), allocatedMem, 0, nullptr);
-    if (!thread) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't create remote thread with LoadLibrary module in ") << 
-            termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
-            endl;
-        return ErrorExit(xorstr_(L"CreateRemoteThread()"));
-    }
-    if (!pCloseHandle(hProcess)) {
-        wcout << 
-            termcolor::red << 
-            xorstr_(L"Can't close ") << 
-            termcolor::bright_red <<
-            processName << 
-            termcolor::reset << 
-            termcolor::red << 
-            xorstr_(L"handle") << 
-            termcolor::reset << 
-            endl;
-        return ErrorExit(xorstr_(L"CloseHandle()"));
-    }
-
-    #pragma endregion
-
-    wcout <<
-        termcolor::green <<
-        xorstr_(L"Successfully injected ") <<
-        termcolor::bright_cyan <<
-        dllname <<
-        termcolor::reset <<
-        termcolor::yellow <<
-        xorstr_(L" into ") <<
-        termcolor::bright_red <<
-        processName <<
-        termcolor::reset <<
-        endl;
-    wcout <<
-        termcolor::bright_white <<
-        xorstr_(L"You have 5 seconds to read this information, GOODBYE") <<
-        termcolor::reset <<
-        endl;
-    this_thread::sleep_for(chrono::seconds(5));
+    wcout << green << x(L"Successfully injected ") << bright_cyan << dllname << reset << yellow << x(L" into ") << bright_red << processName << reset << endl;
+    wcout << bright_white << x(L"You have 5 seconds to read this information, GOODBYE") << reset << endl;
+    sleep_for(5s);
+#undef x
 
     return EXIT_SUCCESS;
 }
